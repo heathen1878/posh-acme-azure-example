@@ -1,4 +1,4 @@
-Function Get-SASToken {
+function Get-SASToken {
 
     [CmdletBinding()]
     param (
@@ -43,7 +43,7 @@ Function Get-SASToken {
 
 }
 
-Function New-Password {
+function New-Password {
     <#
     .SYNOPSIS
         Generate a random password.
@@ -119,7 +119,7 @@ Function New-Password {
 }
   
 
-Function New-P2SChildCert {
+function New-P2SChildCert {
 
     [CmdletBinding()]
     param (
@@ -196,7 +196,7 @@ function Get-PublicIPAddress {
 
 }
 
-Function Set-Subscription {
+function Set-Subscription {
     # Check whether PowerShell is connected to a tenant
     If (Get-AzContext){
         # Output the tenant Name
