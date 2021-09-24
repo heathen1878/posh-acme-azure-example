@@ -1,0 +1,191 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "environment": {
+            "type": "string",
+            "defaultValue": "Demo",
+            "metadata": {
+                "description": "Prod, Dev, Test, PoC, and Demo"
+            }
+        },
+        "company": {
+            "type": "string",
+            "defaultValue": "XXX",
+            "metadata": {
+                "description": "Used for creating random strings where unique names are required."
+            }
+        },
+        "keyVaultAdminGroup":{
+            "type": "string",
+            "metadata": {
+                "description": "the object Id of the Key Vault Admin Group."
+            }
+        },
+        "certificatesOfficerGroup": {
+            "type": "string",
+            "metadata": {
+                "desciption": "the object Id of the certificate officers group."
+            }
+        },
+        "DnsZoneNames": {
+            "type": "array",
+            "metadata": {
+                "description": "the zone name, must be a valid"
+            }
+        },
+        "CNAME_DnsZoneRecords": {
+            "type": "object",
+            "metadata": {
+                "description": "An array of record names, types and values"
+            }
+        },
+        "NS_DnsZoneRecords": {
+            "type": "object",
+            "metadata": {
+                "description": "An array of record names, types and values"
+            }
+        },
+        "resourceTags": {
+            "type": "object",
+            "defaultValue": {
+                "key": "value"
+            },
+            "metadata": {
+                "description": "Tags value pairs which get associated with the DNS Zone"
+            }
+        },
+         "DNSTXTContributorId": {
+            "type": "string",
+            "defaultValue": "",
+            "metadata": {
+                "desciption": "The custom role created by the script: New-RoleDefintion.ps1 - passed through the pipeline or param file if already known"
+            }
+        },
+        "DNSTXTContributorsgroup": {
+            "type": "string",
+            "metadata": {
+                "description": "the object Id of the DNS TXT Contributors Group."
+            }
+        },
+        "_artifactsLocation": {
+            "type": "string",
+            "defaultValue": "https://stdemou3tx2e2jtz6sk.blob.core.windows.net/armtemplates/",
+            "metadata": {
+                "description": "The base URI where artifacts required by this template are located."
+            }
+        }
+    },
+    "variables": {
+        "linkedTemplates":{
+            "Storage": "[concat(parameters('_artifactsLocation'), 'Storage-Account.json')]",
+            "keyVault": "[concat(parameters('_artifactsLocation'), 'Key-Vault.json')]",
+            "dnsZone": "[concat(parameters('_artifactsLocation'), 'DNS-Zone.json')]"
+        }
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2019-10-01",
+            "name": "createStorage",
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri":"[variables('linkedTemplates').Storage]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters":{
+                    "company": {
+                        "value": "[parameters('company')]"
+                    },
+                    "environment": {
+                        "value": "[parameters('environment')]"
+                    },
+                    "suffix": {
+                        "value": "LetsEncrypt"
+                    },
+                    "deployContainer": {
+                        "value": "Yes"
+                    },
+                    "containerName": {
+                        "value": [
+                            "letsencrypt"
+                        ]
+                    },
+                    "resourceTags":{
+                        "value": {
+                            "usage": "Lets Encrypt"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2019-10-01",
+            "name": "createKeyVault",
+            "dependsOn":[
+                "[resourceId('Microsoft.Resources/deployments', 'createStorage')]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri":"[variables('linkedTemplates').keyVault]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters":{
+                    "kvUsage": {
+                        "value": "LetsEncrypt"
+                    },
+                    "keyVaultAdminGroup": {
+                        "value": "[parameters('keyVaultAdminGroup')]"
+                    },
+                    "certificatesOfficerGroup": {
+                        "value": "[parameters('certificatesOfficerGroup')]"
+                    }
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2019-10-01",
+            "name": "createDnsZone",
+            "dependsOn":[
+                "[resourceId('Microsoft.Resources/deployments', 'createKeyVault')]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri":"[variables('linkedTemplates').dnsZone]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "DnsZoneNames": {
+                        "value": "[parameters('DnsZoneNames')]"
+                    },
+                    "deployCNAMERecord": {
+                        "value": "Yes"
+                    },
+                    "CNAME_DnsZoneRecords": {
+                        "value": "[parameters('CNAME_DnsZoneRecords')]"
+                    },
+                    "NS_DnsZoneRecords": {
+                        "value": "[parameters('NS_DnsZoneRecords')]"
+                    },
+                    "resourceTags": {
+                        "value": "[parameters('resourceTags')]"
+                    },
+                    "DNSTXTContributorId": {
+                        "value": "[parameters('DNSTXTContributorId')]"
+                    },
+                    "DNSTXTContributorsgroup": {
+                        "value": "[parameters('DNSTXTContributorsgroup')]"
+                    }   
+                }
+            }
+        }
+    ],
+    "outputs": {
+
+    }
+}
