@@ -28,7 +28,7 @@ $pfxFilePath = Join-Path -Path $orderDirectoryPath -ChildPath "fullchain.pfx"
 # If we have a order and certificate available
 if ((Test-Path -Path $orderDirectoryPath) -and (Test-Path -Path $orderDataPath) -and (Test-Path -Path $pfxFilePath)) {
 
-    $pfxPass = (Get-PAOrder $certificateName).PfxPass
+    $pfxPass = (Get-PAOrder -Name $certificateName).PfxPass
 
     # Load PFX
     $certificate = New-Object -TypeName System.Security.Cryptography.X509Certificates.X509Certificate2 -ArgumentList $pfxFilePath, $pfxPass, 'EphemeralKeySet'
