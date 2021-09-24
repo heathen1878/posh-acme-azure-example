@@ -81,7 +81,7 @@ If (Test-Path (-join($workingDirectory, '\', (Get-PAServer).Name, '\', (Get-PAAc
         If ($order.CertExpires -lt (Get-Date).AddDays(76)){
 
             #renew cert
-            #Submit-Renewal
+            Submit-Renewal
 
         }
 
