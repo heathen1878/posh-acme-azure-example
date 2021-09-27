@@ -4,6 +4,7 @@ parameters:
   - name: location
   - name: company
   - name: serviceConn
+  - name: certificate
 
 stages:
 - stage: ${{ parameters.stage_name }}
@@ -52,16 +53,6 @@ stages:
                 Write-Host "##vso[task.setvariable variable=leRG_Name;]$value"
               azurePowerShellVersion: latestVersion
               pwsh: true
-
-          - task: AzurePowerShell@4
-            displayName: Display variables
-            inputs:
-              azureSubscription: ${{ parameters.serviceConn }}
-              scriptType: InlineScript
-              Inline: |
-                Get-ChildItem env:
-              azurePowerShellVersion: latestVersion
-              pwsh: true
           
           - task: AzureResourceManagerTemplateDeployment@3
             displayName: Deploy LE resources
@@ -82,6 +73,32 @@ stages:
                 -DNSTXTContributorId $(dnsTXTContributorRole)
               deploymentMode: Incremental
               deploymentOutputs: 'leOutput'
+
+          - task: AzurePowerShell@4
+            displayName: Get the LE resources outputs
+            inputs:
+              azureSubscription: ${{ parameters.serviceConn }}
+              scriptType: InlineScript
+              Inline: |
+                $var=ConvertFrom-Json '$(leOutput)'
+                $value=$var.storageAccount_Id.value
+                Write-Host "##vso[task.setvariable variable=leStorageAccount_Id;]$value"
+                $value=$var.keyVault_Id.value
+                Write-Host "##vso[task.setvariable variable=leKeyVault_Id;]$value"
+              azurePowerShellVersion: latestVersion
+              pwsh: true
+
+          - task: AzurePowerShell@4
+            displayName: Generate Certificate
+            inputs:
+              azureSubscription: ${{ parameters.serviceConn }}
+              scriptType: InlineScript
+              Inline: |
+                Write-Host ${{ parameters.certificate }}
+                Write-Host $(leStorageAccount_Id)
+                Write-Host $(leKeyVault_Id)
+              azurePowerShellVersion: latestVersion
+              pwsh: true
 
           - task: AzurePowerShell@4
             displayName: Get outputs

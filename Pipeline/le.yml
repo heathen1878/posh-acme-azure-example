@@ -14,3 +14,4 @@ stages:
       location: ${{ upper(variables.azure_region) }}
       company: ${{ upper(variables.company) }}
       serviceConn: ${{ variables.serviceConn }}
+      certificate: ${{ variables.certificate }}
