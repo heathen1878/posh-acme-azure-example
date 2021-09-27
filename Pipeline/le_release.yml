@@ -52,6 +52,16 @@ stages:
                 Write-Host "##vso[task.setvariable variable=leRG_Name;]$value"
               azurePowerShellVersion: latestVersion
               pwsh: true
+
+          - task: AzurePowerShell@4
+            displayName: Display variables
+            inputs:
+              azureSubscription: ${{ parameters.serviceConn }}
+              scriptType: InlineScript
+              Inline: |
+                Get-ChildItem env:
+              azurePowerShellVersion: latestVersion
+              pwsh: true
           
           - task: AzureResourceManagerTemplateDeployment@3
             displayName: Deploy LE resources
