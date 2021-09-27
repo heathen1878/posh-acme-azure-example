@@ -92,11 +92,10 @@ stages:
             displayName: Generate Certificate
             inputs:
               azureSubscription: ${{ parameters.serviceConn }}
-              scriptType: InlineScript
-              Inline: |
-                Write-Host ${{ parameters.certificate }}
-                Write-Host $(leStorageAccount_Id)
-                Write-Host $(leKeyVault_Id)
+              scriptType: FilePath
+              scriptPath: $(System.DefaultWorkingDirectory)\scripts\New-AcmeCertificate.ps1
+              scriptArguments:
+                -domainNames ${{ parameters.certificate }}
               azurePowerShellVersion: latestVersion
               pwsh: true
 

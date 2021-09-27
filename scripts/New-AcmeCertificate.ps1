@@ -12,6 +12,10 @@ param (
     [bool]$staging=$true
 )
 
+Write-Host $domainNames
+Write-Host $domainNames.GetType()
+
+<#
 #Requires -Version 6.1
 #Requires -Modules @{ModuleName="Az.Accounts"; ModuleVersion="2.5.2"}
 #Requires -Modules @{ModuleName="Az.Storage"; ModuleVersion="3.10.0"}
@@ -133,3 +137,4 @@ If (Test-Path (-join($workingDirectory, '\', (Get-PAServer).Name, '\', (Get-PAAc
     }
 
 }
+#>
