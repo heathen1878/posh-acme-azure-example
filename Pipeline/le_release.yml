@@ -17,17 +17,78 @@ stages:
           - download: none
           - checkout: self
           - task: AzureResourceManagerTemplateDeployment@3
-            displayName: Create Resource Group for deployment resources
+            displayName: Create Resource Group for Lets Encrypt solution
             inputs:
               deploymentScope: Subscription
               azureResourceManagerConnection: ${{ parameters.serviceConn }}
               location: ${{ parameters.location }}
               templateLocation: Linked artifact
               csmFile: $(System.DefaultWorkingDirectory)\Artifacts\Resource-Group.json
-              csmParametersFile: $(System.DefaultWorkingDirectory)\Deploy\Resource-Group.parameters.json
+              csmParametersFile: $(System.DefaultWorkingDirectory)\templates\Resource-Group.parameters.json
               overrideParameters:
                 -environment ${{ upper(parameters.environment) }}
                 -location ${{ parameters.location }}
-                -company ${{ parameters.company }}
               deploymentMode: Incremental
-              deploymentOutputs: 'deploymentRG'
+              deploymentOutputs: 'leRG'
+
+          - task: AzurePowerShell@4
+            displayName: create a role definition for DNS
+            inputs:
+              azureSubscription: ${{ parameters.serviceConn }}
+              scriptType: FilePath
+              scriptPath: $(System.DefaultWorkingDirectory)\scripts\New-RoleDefinition.ps1
+              FailOnStandardError: true
+              azurePowerShellVersion: latestVersion
+              pwsh: true
+
+          - task: AzurePowerShell@4
+            displayName: Get the resource group name
+            inputs:
+              azureSubscription: ${{ parameters.serviceConn }}
+              scriptType: InlineScript
+              Inline: |
+                $var=ConvertFrom-Json '$(leRG)'
+                $value=$var.resourceGroup_Name.value
+                Write-Host "##vso[task.setvariable variable=leRG_Name;]$value"
+              azurePowerShellVersion: latestVersion
+              pwsh: true
+          
+          - task: AzureResourceManagerTemplateDeployment@3
+            displayName: Deploy LE resources
+            inputs:
+              deploymentScope: 'Resource Group'
+              azureResourceManagerConnection: ${{ parameters.serviceConn }}
+              action: Create Or Update Resource Group
+              resourceGroupName: $(leRG_Name)
+              location: ${{ parameters.location }}
+              templateLocation: Linked artifact
+              csmFile: $(System.DefaultWorkingDirectory)\templates\azuredeploy.json
+              csmParametersFile: $(System.DefaultWorkingDirectory)\templates\azuredeploy.parameters.json
+              overrideParameters:
+                -environment ${{ parameters.environment }}
+                -keyVaultAdminGroup $(KeyVaultAdminGroup)
+                -certificatesOfficerGroup $(CertificatesOfficerGroup)
+                -DNSTXTContributorsGroup $(DNSTXTContributorsGroup)
+                -DNSTXTContributorId $(dnsTXTContributorRole)
+              deploymentMode: Incremental
+              deploymentOutputs: 'leOutput'
+
+          - task: AzurePowerShell@4
+            displayName: Get outputs
+            inputs:
+              azureSubscription: ${{ parameters.serviceConn }}
+              ScriptType: InlineScript
+              Inline: |
+                New-Item -Path $(Pipeline.Workspace) -Name Variables -ItemType Directory
+
+                $leOutputs = @{}
+                Get-ChildItem env:LEOUTPUT_* | ForEach-Object {$leOutputs.Add($_.Name,$_.Value.Replace("""",""))}
+                $leOutputs.GetEnumerator() | Select-Object Name, Value | Export-Csv -Path $env:PIPELINE_WORKSPACE\Variables\${{ parameters.environment }}-le.csv -IncludeTypeInformation:$false
+              azurePowerShellVersion: latestVersion
+              pwsh: true
+          
+          - task: PublishPipelineArtifact@1
+            displayName: Publish Variables
+            inputs:
+              targetPath: $(Pipeline.Workspace)\Variables
+              artifactName: ${{ parameters.environment }}-Variables

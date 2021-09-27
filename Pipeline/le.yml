@@ -9,8 +9,8 @@ pool:
 stages:
   -template: le_release.yml
   parameters:
-    stage_name: DeployToDemo
-    environment: Demo
+    stage_name: DeployToTesting
+    environment: Testing
     location: ${{ upper(variables.azure_region) }}
     company: ${{ upper(variables.company) }}
     serviceConn: ${{ variables.serviceConn }}
