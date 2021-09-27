@@ -137,6 +137,12 @@
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters":{
+                    "company": {
+                        "value": "[parameters('company')]"
+                    },
+                    "environment": {
+                        "value": "[parameters('environment')]"
+                    },
                     "kvUsage": {
                         "value": "LetsEncrypt"
                     },
