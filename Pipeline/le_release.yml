@@ -96,6 +96,9 @@ stages:
               scriptPath: $(System.DefaultWorkingDirectory)\scripts\New-AcmeCertificate.ps1
               scriptArguments:
                 -domainNames ${{ parameters.certificate }}
+                -contactEmailAddress 'dom'
+                -storageAccountId $(leStorageAccount_Id)
+                -keyVaultId $(leKeyVault_Id)
               azurePowerShellVersion: latestVersion
               pwsh: true
 
