@@ -195,6 +195,13 @@
         }
     ],
     "outputs": {
-
+        "storageAccount_Id": {
+            "type": "string",
+            "value": "[reference('createStorage').outputs.storageAccount_Id.value]"
+        },
+        "keyVault_Id": {
+            "type": "string",
+            "value": "[reference('createKeyVault').outputs.keyVault_Id.value]"
+        }
     }
 }
