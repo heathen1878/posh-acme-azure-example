@@ -7,10 +7,10 @@ pool:
   vmImage: windows-latest
 
 stages:
-  -template: le_release.yml
-  parameters:
-    stage_name: DeployToTesting
-    environment: Testing
-    location: ${{ upper(variables.azure_region) }}
-    company: ${{ upper(variables.company) }}
-    serviceConn: ${{ variables.serviceConn }}
+  - template: le_release.yml
+    parameters:
+      stage_name: DeployToTesting
+      environment: Testing
+      location: ${{ upper(variables.azure_region) }}
+      company: ${{ upper(variables.company) }}
+      serviceConn: ${{ variables.serviceConn }}
