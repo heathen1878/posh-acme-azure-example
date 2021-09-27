@@ -176,7 +176,7 @@
         },
         "locations": {
             "type": "string",
-            "value": "[replace(string(variables('AllowedLocations')), '[', '')]"
+            "value": "[replace(replace(string(variables('AllowedLocations')), '[', ''), ']', '')]"
         }
     }
 }
