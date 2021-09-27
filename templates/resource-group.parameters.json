@@ -1,0 +1,38 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "Company": {
+            "value": "Dom"
+        },
+        "environment": {
+            "value": "Testing"
+        },
+        "location": {
+            "value": "North Europe"
+        },
+        "usage": {
+            "value": "letsencrypt"
+        },
+        "resourceTags":{
+            "value": {
+                "application": "Lets Encrypt",
+                "businessContact": "Dom Clayton",
+                "department": "DevOps",
+                "description": "Contains resources to provided automated certificates...",
+                "technicalContact": "Dom Clayton"
+            }
+        },
+        "RBAC": {
+            "value": [
+                {
+                    "roleId": "acdd72a7-3385-48ef-bd42-f606fba81ae7",
+                    "principalId": "c210dfbe-885e-4ecf-8c6b-d6f1d32501e7"
+                }
+            ]
+        },
+        "DedicatedSubscription": {
+            "value": "No"
+        }
+    }
+}
