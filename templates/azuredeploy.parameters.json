@@ -16,15 +16,7 @@
                 "records": [
                     {
                         "Name": "infratechy.co.uk",
-                        "Record": "@"
-                    },
-                    {
-                        "Name": "infratechy.co.uk",
                         "Record": "_acme-challenge"
-                    },
-                    {
-                        "Name": "_acme-challenge.infratechy.co.uk",
-                        "Record": "@"
                     }
                 ]
             }
