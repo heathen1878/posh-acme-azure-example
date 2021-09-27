@@ -6,7 +6,7 @@ parameters:
   - name: serviceConn
 
 stages:
-  - stage: ${{ parameters.stage_name }}
+- stage: ${{ parameters.stage_name }}
   jobs:
   - deployment: DeployResourcesAndFunctionalityforLE
     environment: ${{ parameters.environment }}
