@@ -1,0 +1,54 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "company": {
+            "value": "Dom"
+        },
+        "DnsZoneNames": {
+            "value": [
+                "infratechy.co.uk",
+                "_acme-challenge.infratechy.co.uk"
+            ]
+        },
+        "NS_DnsZoneRecords": {
+            "value": {
+                "records": [
+                    {
+                        "Name": "infratechy.co.uk",
+                        "Record": "@"
+                    },
+                    {
+                        "Name": "infratechy.co.uk",
+                        "Record": "_acme-challenge"
+                    },
+                    {
+                        "Name": "_acme-challenge.infratechy.co.uk",
+                        "Record": "@"
+                    }
+                ]
+            }
+        },
+        "CNAME_DnsZoneRecords": {
+            "value": {
+                "records": [
+                    {
+                        "Name": "infratechy.co.uk",
+                        "Record": "github",
+                        "value": "stdevt4z3f7au4f3xe.blob.core.windows.net."
+                    },
+                    {
+                        "Name": "infratechy.co.uk",
+                        "Record": "/asverify.github",
+                        "value": "asverify.stdevt4z3f7au4f3xe.blob.core.windows.net."
+                    }
+                ]
+            }
+        },
+        "resourceTags": {
+            "value": {
+                "key": "Testing Lets Encrypt"
+            }
+        }
+    }
+}
