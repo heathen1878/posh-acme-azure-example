@@ -18,12 +18,14 @@
         },
         "keyVaultAdminGroup":{
             "type": "string",
+            "defaultValue": "",
             "metadata": {
                 "description": "the object Id of the Key Vault Admin Group."
             }
         },
         "certificatesOfficerGroup": {
             "type": "string",
+            "defaultValue": "",
             "metadata": {
                 "desciption": "the object Id of the certificate officers group."
             }
@@ -62,8 +64,9 @@
                 "desciption": "The custom role created by the script: New-RoleDefintion.ps1 - passed through the pipeline or param file if already known"
             }
         },
-        "DNSTXTContributorsgroup": {
+        "DNSTXTContributorsGroup": {
             "type": "string",
+            "defaultValue": "",
             "metadata": {
                 "description": "the object Id of the DNS TXT Contributors Group."
             }
@@ -179,7 +182,7 @@
                         "value": "[parameters('DNSTXTContributorId')]"
                     },
                     "DNSTXTContributorsgroup": {
-                        "value": "[parameters('DNSTXTContributorsgroup')]"
+                        "value": "[parameters('DNSTXTContributorsGroup')]"
                     }   
                 }
             }
