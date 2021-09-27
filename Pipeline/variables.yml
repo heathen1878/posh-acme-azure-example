@@ -2,4 +2,4 @@ variables:
   azure_region: 'northeurope'
   company: 'Dom'
   serviceConn: 'LE'
-  certificate: '*.infratechy.co.uk','infratechy.co.uk'
+  certificate: '*.infratechy.co.uk,infratechy.co.uk'
