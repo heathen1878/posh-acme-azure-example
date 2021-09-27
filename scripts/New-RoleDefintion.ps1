@@ -28,12 +28,13 @@ If ($roleDefinition){
 
     $role = New-AzRoleDefinition $roleDefinition
 
-    ##########################################################
-    # Assign the role definition Id to for use in the pipeline
-    ##########################################################
+    
     $roleId = $role.Id
     
 }
 
+##########################################################
+# Assign the role definition Id to for use in the pipeline
+##########################################################
 Write-Host "##vso[task.setvariable variable=dnsTXTContributorRole;]$roleId"
 
