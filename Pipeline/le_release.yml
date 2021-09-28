@@ -97,7 +97,7 @@ stages:
               scriptType: InlineScript
               Inline: |
 
-                Import-Module ..\psModules\Dom.Support\Dom.Support.psm1
+                Import-Module $(System.DefaultWorkingDirectory)\psModules\Dom.Support\Dom.Support.psm1
                 
                 # Required Modules
                 $modules = @{
