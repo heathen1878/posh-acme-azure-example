@@ -213,9 +213,26 @@ function Set-Subscription {
 	Write-Output ('Setting context to: {0}' -f (Get-AzSubscription -SubscriptionId $SubId.Subscription).Name)
 }
 
+function Get-ModuleVersion {
+
+    [CmdletBinding()]
+    Param
+    (
+        [parameter(Mandatory)]
+        [string]$ModuleName
+    )
+    
+    $module = (Get-Module -FullyQualifiedName $ModuleName)
+    $Version = (-Join($module.Version.Major, '.', $module.Version.Minor,'.', $module.Version.Build))
+    
+    Return $version
+
+}
+
 Export-ModuleMember Get-SASToken
 Export-ModuleMember New-Password
 Export-ModuleMember New-P2SChildCert
 Export-ModuleMember Get-AccessToken
 Export-ModuleMember Get-AuthenticationHeader
 Export-ModuleMember Set-Subscription
+Export-ModuleMember Get-ModuleVersion
