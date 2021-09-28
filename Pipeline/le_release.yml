@@ -153,6 +153,22 @@ stages:
               pwsh: true
 
           - task: AzurePowerShell@4
+            displayName: Generate Certificate
+            inputs:
+              azureSubscription: ${{ parameters.serviceConn }}
+              scriptType: FilePath
+              scriptPath: $(System.DefaultWorkingDirectory)\scripts\New-AcmeCertificate.ps1
+              scriptArguments:
+                -domainNames ${{ parameters.certificate }}
+                -contactEmailAddress $(contactEmailAddress)
+                -storageAccountId $(leStorageAccount_Id)
+                -keyVaultId $(leKeyVault_Id)
+              FailOnStandardError: true
+              azurePowerShellVersion: latestVersion
+              pwsh: true
+              condition: succeeded()
+
+          - task: AzurePowerShell@4
             displayName: Get outputs
             inputs:
               azureSubscription: ${{ parameters.serviceConn }}
