@@ -117,7 +117,6 @@ function New-Password {
         }
     }
 }
-  
 
 function New-P2SChildCert {
 
@@ -229,6 +228,32 @@ function Get-ModuleVersion {
 
 }
 
+Function WriteToLog {
+
+    [CmdletBinding()]
+	Param
+	(
+        [parameter(Mandatory)]
+	    [string]$LogFile,  
+	    [parameter(Mandatory)]
+        [string]$LogContent
+	)
+	
+	If (Test-Path $sLogFile) {
+	
+		# Append to the file
+		Add-Content -Path $sLogFile -Value $sLogContent
+		
+	}
+	Else {
+	
+		# Create the file
+		New-Item -ItemType File -Path $sLogFile
+		Add-Content -Path $sLogFile -Value $sLogContent
+		
+	}
+}
+
 Export-ModuleMember Get-SASToken
 Export-ModuleMember New-Password
 Export-ModuleMember New-P2SChildCert
@@ -236,3 +261,4 @@ Export-ModuleMember Get-AccessToken
 Export-ModuleMember Get-AuthenticationHeader
 Export-ModuleMember Set-Subscription
 Export-ModuleMember Get-ModuleVersion
+Export-ModuleMember Write-ToLog
