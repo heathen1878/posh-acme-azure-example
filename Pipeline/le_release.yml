@@ -96,30 +96,61 @@ stages:
               azureSubscription: ${{ parameters.serviceConn }}
               scriptType: InlineScript
               Inline: |
-                Install-Module Az.Accounts -scope CurrentUser -Confirm:$false -Force
-                Install-Module Az.KeyVault -scope CurrentUser -Confirm:$false -Force
-                Install-Module Az.Resources -scope CurrentUser -Confirm:$false -Force
-                Install-Module Az.Storage -scope CurrentUser -Confirm:$false -Force
-                Install-Module Posh-ACME -scope CurrentUser -Confirm:$false -Force
-              FailOnStandardError: true
-              azurePowerShellVersion: latestVersion
-              pwsh: true
 
-          - task: AzurePowerShell@4
-            displayName: Generate Certificate
-            inputs:
-              azureSubscription: ${{ parameters.serviceConn }}
-              scriptType: FilePath
-              scriptPath: $(System.DefaultWorkingDirectory)\scripts\New-AcmeCertificate.ps1
-              scriptArguments:
-                -domainNames ${{ parameters.certificate }}
-                -contactEmailAddress 'dom'
-                -storageAccountId $(leStorageAccount_Id)
-                -keyVaultId $(leKeyVault_Id)
+                Import-Module ..\psModules\Dom.Support\Dom.Support.psm1
+                
+                # Required Modules
+                $modules = @{
+                  'Az.KeyVault' = '3.4.5'
+                  'Az.Resources' = '4.3.0'
+                  'Az.Storage' = '3.10.0'
+                  'Posh-ACME' = '4.9.0'
+                }
+
+                $Modules.Keys | Foreach-Object {
+                
+                  If (Get-Module -Name $_){
+
+                    $Version = Get-ModuleVersion -ModuleName $_
+
+                    If ($version -lt $Modules[$_]){
+                      
+                      Try {
+                        
+                        Install-Module -Name $_ -MinimumVersion $Modules[$_] -scope CurrentUser -Confirm:$false -Force -ErrorAction Stop
+                      
+                      }
+                      Catch {
+
+                        Write-Error[0].Exception.Message
+
+                      }
+
+                    }
+
+
+                  } Else {
+                    
+                    Try {
+
+                      Install-Module -Name $_ -scope CurrentUser -Confirm:$false -Force -ErrorAction Stop
+
+                    }
+                    Catch {
+
+                      Write-Error[0].Exception.Message
+                      
+                    }
+
+                  }
+
+                }
+
+                azcopy --version
+
               FailOnStandardError: true
               azurePowerShellVersion: latestVersion
               pwsh: true
-              condition: succeeded()
 
           - task: AzurePowerShell@4
             displayName: Get outputs
