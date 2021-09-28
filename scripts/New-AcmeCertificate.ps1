@@ -41,6 +41,9 @@ $blobEndpoint, $sasToken = Get-SASToken -containerName 'letsencrypt' -storageAcc
 # Sync contents of storage container to working directory
 azcopy sync (-join($blobEndpoint,$sasToken)) $workingDirectory | Out-Null
 
+# Debugging - Update log file
+Write-ToLog -LogFile (-join($workingDirectory, '\le.log')) -LogContent (-join((get-date).DayOfWeek, 'at ', (Get-Date).TimeOfDay.Hours, ':', (Get-Date).TimeOfDay.Minutes))
+
 # Set Posh-ACME working directory
 $env:POSHACME_HOME = $workingDirectory
 Import-Module Posh-ACME -Force
