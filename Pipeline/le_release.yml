@@ -156,13 +156,11 @@ stages:
             displayName: Generate Certificate
             inputs:
               azureSubscription: ${{ parameters.serviceConn }}
-              scriptType: FilePath
-              scriptPath: $(System.DefaultWorkingDirectory)\scripts\New-AcmeCertificate.ps1
-              scriptArguments:
-                -domainNames ${{ parameters.certificate }}
-                -contactEmailAddress $(contactEmailAddress)
-                -storageAccountId $(leStorageAccount_Id)
-                -keyVaultId $(leKeyVault_Id)
+              scriptType: InlineScript
+              Inline: |
+                Import-Module $(System.DefaultWorkingDirectory)\psModules\Dom.Support\Dom.Support.psm1
+                
+                '$(System.DefaultWorkingDirectory)\scripts\New-AcmeCertificate.ps1 -domainNames ${{ parameters.certificate }} -contactEmailAddress $(contactEmailAddress) -storageAccountId $(leStorageAccount_Id) -keyVaultId $(leKeyVault_Id)'
               FailOnStandardError: true
               azurePowerShellVersion: latestVersion
               pwsh: true
