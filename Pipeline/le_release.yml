@@ -96,7 +96,11 @@ stages:
               azureSubscription: ${{ parameters.serviceConn }}
               scriptType: InlineScript
               Inline: |
-                'Install-Module Az.Accounts, Az.KeyVault, Az.Resources, Az.Storage, Posh-ACME -Force'
+                Install-Module Az.Accounts -scope CurrentUser -Confirm:$false -Force
+                Install-Module Az.KeyVault -scope CurrentUser -Confirm:$false -Force
+                Install-Module Az.Resources -scope CurrentUser -Confirm:$false -Force
+                Install-Module Az.Storage -scope CurrentUser -Confirm:$false -Force
+                Install-Module Posh-ACME -scope CurrentUser -Confirm:$false -Force
               FailOnStandardError: true
               azurePowerShellVersion: latestVersion
               pwsh: true
@@ -115,6 +119,7 @@ stages:
               FailOnStandardError: true
               azurePowerShellVersion: latestVersion
               pwsh: true
+              condition: succeeded()
 
           - task: AzurePowerShell@4
             displayName: Get outputs
