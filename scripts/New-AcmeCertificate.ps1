@@ -19,10 +19,6 @@ param (
 #Requires -Modules @{ModuleName="Az.KeyVault"; ModuleVersion="3.4.5"}
 #Requires -Modules @{ModuleName="Az.Resources"; ModuleVersion="4.3.0"}
 
-
-# Load module
-Import-Module ..\psModules\Dom.Support\Dom.Support.psm1 -Force
-
 # Supress progress messages. Azure DevOps doesn't format them correctly (used by New-PACertificate)
 $global:ProgressPreference = 'SilentlyContinue'
 
