@@ -15,4 +15,4 @@ stages:
       company: ${{ upper(variables.company) }}
       serviceConn: ${{ variables.serviceConn }}
       certificate: ${{ variables.certificate }}
-      AzDoFeed: ${{ variables.azdofeed }}
+      azdofeed: ${{ variables.azdofeed }}
