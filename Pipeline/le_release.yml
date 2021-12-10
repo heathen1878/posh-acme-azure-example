@@ -105,7 +105,7 @@ stages:
 
                 $devOpsCred = New-Object System.Management.Automation.PSCredential($env:SYSTEM_ACCESSTOKEN, $accessToken)
               
-                Regsiter-PackageSource -Name AzDoRepo -ProviderName PowerShellGet -Location ${{ parameters.azdofeed }}  -Trusted -Credential $devOpsCred
+                Register-PackageSource -Name AzDoRepo -ProviderName PowerShellGet -Location ${{ parameters.azdofeed }}  -Trusted -Credential $devOpsCred
 
                 Find-Module -Repository AzDoRepo -Credential $devOpsCred
 
