@@ -5,6 +5,7 @@ parameters:
   - name: company
   - name: serviceConn
   - name: certificate
+  - name: azdofeed
 
 stages:
 - stage: ${{ parameters.stage_name }}
@@ -97,8 +98,17 @@ stages:
               scriptType: InlineScript
               Inline: |
 
-                Import-Module $(System.DefaultWorkingDirectory)\psModules\Dom.Support\Dom.Support.psm1
-                
+                # Reference for internal PowerShell modules - https://ochzhen.com/blog/install-powershell-module-from-azure-artifacts-feed
+                [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+                $accessToken = $env:SYSTEM_ACCESSTOKEN | ConvertTo-SecureString -AsPlainText -Force
+
+                $devOpsCred = New-Object System.Management.Automation.PSCredential($env:SYSTEM_ACCESSTOKEN, $accessToken)
+              
+                Regsiter-PackageSource -Name AzDoRepo -ProviderName POwerShellGet -Location ${{ parameters.azdofeed }}  -Trusted -Credential $devOpsCred
+
+                Find-Module -Repository AzDoRepo -Credential $devOpsCred
+
                 # Required Modules
                 $modules = @{
                   'Az.KeyVault' = '3.4.5'
@@ -146,21 +156,19 @@ stages:
 
                 }
 
-                azcopy --version
-
               FailOnStandardError: true
               azurePowerShellVersion: latestVersion
               pwsh: true
+              env:
+                SYSTEM_ACCESSTOKEN: $(System.AccessToken)
 
           - task: AzurePowerShell@4
             displayName: Generate Certificate
             inputs:
               azureSubscription: ${{ parameters.serviceConn }}
               scriptType: InlineScript
-              Inline: |
-                Import-Module $(System.DefaultWorkingDirectory)\psModules\Dom.Support\Dom.Support.psm1
-                
-                '$(System.DefaultWorkingDirectory)\scripts\New-AcmeCertificate.ps1 -domainNames ${{ parameters.certificate }} -contactEmailAddress $(contactEmailAddress) -storageAccountId $(leStorageAccount_Id) -keyVaultId $(leKeyVault_Id)'
+              Inline: |                
+                '# $(System.DefaultWorkingDirectory)\scripts\New-AcmeCertificate.ps1 -domainNames ${{ parameters.certificate }} -contactEmailAddress $(contactEmailAddress) -storageAccountId $(leStorageAccount_Id) -keyVaultId $(leKeyVault_Id)'
               FailOnStandardError: true
               azurePowerShellVersion: latestVersion
               pwsh: true

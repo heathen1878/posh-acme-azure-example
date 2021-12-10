@@ -3,3 +3,4 @@ variables:
   company: 'Dom'
   serviceConn: 'LE'
   certificate: '"*.infratechy.co.uk","infratechy.co.uk"'
+  azdofeed: "https://pkgs.dev.azure.com/heathen1878/MSDN/_packaging/dom/nuget/v2"
