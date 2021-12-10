@@ -105,7 +105,7 @@ stages:
 
                 $devOpsCred = New-Object System.Management.Automation.PSCredential($env:SYSTEM_ACCESSTOKEN, $accessToken)
               
-                Regsiter-PackageSource -Name AzDoRepo -ProviderName POwerShellGet -Location ${{ parameters.azdofeed }}  -Trusted -Credential $devOpsCred
+                Regsiter-PackageSource -Name AzDoRepo -ProviderName PowerShellGet -Location ${{ parameters.azdofeed }}  -Trusted -Credential $devOpsCred
 
                 Find-Module -Repository AzDoRepo -Credential $devOpsCred
 
@@ -159,8 +159,8 @@ stages:
               FailOnStandardError: true
               azurePowerShellVersion: latestVersion
               pwsh: true
-              env:
-                SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+            env:
+              SYSTEM_ACCESSTOKEN: $(System.AccessToken)
 
           - task: AzurePowerShell@4
             displayName: Generate Certificate
