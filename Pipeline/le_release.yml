@@ -91,10 +91,9 @@ stages:
               azurePowerShellVersion: latestVersion
               pwsh: true
 
-          - task: AzurePowerShell@4
+          - task: AzurePowerShell@2
             displayName: Install required modules
             inputs:
-              azureSubscription: ${{ parameters.serviceConn }}
               scriptType: InlineScript
               Inline: |
 
@@ -104,8 +103,8 @@ stages:
                 $accessToken = $env:SYSTEM_ACCESSTOKEN | ConvertTo-SecureString -AsPlainText -Force
 
                 $devOpsCred = New-Object System.Management.Automation.PSCredential($env:SYSTEM_ACCESSTOKEN, $accessToken)
-              
-                Register-PackageSource -Name AzDoRepo -ProviderName PowerShellGet -Location ${{ parameters.azdofeed }} -Trusted -Credential $devOpsCred
+
+                Register-PackageSource -Name AzDoRepo -ProviderName 'PowerShellGet' -Location ${{ parameters.azdofeed }} -Trusted -Credential $devOpsCred
 
                 Install-Module -Repository AzDoRepo -Name Dom.Logging -Force -Credential $devOpsCred
                 Install-Module -Repository AzDoRepo -Name Dom.Storage -Force -Credential $devOpsCred
@@ -160,7 +159,6 @@ stages:
                 }
 
               FailOnStandardError: true
-              azurePowerShellVersion: latestVersion
               pwsh: true
             env:
               SYSTEM_ACCESSTOKEN: $(System.AccessToken)
