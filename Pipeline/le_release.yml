@@ -94,8 +94,8 @@ stages:
           - task: PowerShell@2
             displayName: Install required modules
             inputs:
-              scriptType: InlineScript
-              Inline: |
+              targetType: Inline
+              script: |
 
                 # Reference for internal PowerShell modules - https://ochzhen.com/blog/install-powershell-module-from-azure-artifacts-feed
                 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
@@ -158,7 +158,7 @@ stages:
 
                 }
 
-              FailOnStandardError: true
+              failOnStderr: true
               pwsh: true
             env:
               SYSTEM_ACCESSTOKEN: $(System.AccessToken)
