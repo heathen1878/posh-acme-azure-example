@@ -91,7 +91,7 @@ stages:
               azurePowerShellVersion: latestVersion
               pwsh: true
 
-          - task: AzurePowerShell@2
+          - task: PowerShell@2
             displayName: Install required modules
             inputs:
               scriptType: InlineScript
