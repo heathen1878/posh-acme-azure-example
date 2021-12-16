@@ -1,6 +1,6 @@
 variables:
-  azure_region: 'northeurope'
-  company: 'Dom'
-  serviceConn: 'LE'
-  certificate: '"*.infratechy.co.uk","infratechy.co.uk"'
-  azdofeed: "https://pkgs.dev.azure.com/heathen1878/MSDN/_packaging/dom/nuget/v2"
+  azure_region: 'Region'
+  serviceConn: 'DevOps Connection Name'
+  azdofeed: "private PS repo"
+  certificate: '"subject name"," subject alternative names"'
+  contactemail: 'email to register with Lets Encrypt'
