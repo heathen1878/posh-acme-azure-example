@@ -22,4 +22,9 @@ Add the GUIDs of the groups above into the parameters.json
 
 ## Build status
 
-[![Build Status](https://dev.azure.com/heathen1878/MSDN/_apis/build/status/Pwsh-LetsEncrypt-Cert-Automation?branchName=main)](https://dev.azure.com/heathen1878/MSDN/_build/latest?definitionId=6&branchName=main)
+Supporting infrastructure:
+
+[![Build Status](https://dev.azure.com/heathen1878/MSDN/_apis/build/status/Arm-LetsEncrypt-Infra?branchName=main)](https://dev.azure.com/heathen1878/MSDN/_build/latest?definitionId=6&branchName=main)
+
+Certificate renewal:
+
