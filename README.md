@@ -20,6 +20,9 @@ Add the GUIDs of the groups above into the parameters.json
 
 ```
 
+# ARM outputs
+The name servers assigned your public DNS zone will need configuring at your domain name registar - the outputs are available in the portal under deployments or as a published artifact within the pipeline.
+
 ## Build status
 
 Supporting infrastructure:
@@ -28,3 +31,4 @@ Supporting infrastructure:
 
 Certificate renewal:
 
+[![Build Status](https://dev.azure.com/heathen1878/MSDN/_apis/build/status/Pwsh-LetsEncrypt-Cert?branchName=main)](https://dev.azure.com/heathen1878/MSDN/_build/latest?definitionId=8&branchName=main)
