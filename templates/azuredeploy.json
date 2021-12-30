@@ -1,5 +1,5 @@
 {
-    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
         "environment": {
@@ -9,43 +9,24 @@
                 "description": "Prod, Dev, Test, PoC, and Demo"
             }
         },
-        "company": {
+        "usage":{
             "type": "string",
-            "defaultValue": "XXX",
+            "defaultValue": "ResourceGroupUsage",
             "metadata": {
-                "description": "Used for creating random strings where unique names are required."
+                "description": "Used to build the resource group name e.g. identity resources would live in a resource group which contains the word identity, an application might use APP1"
             }
         },
-        "keyVaultAdminGroup":{
+        "location": {
             "type": "string",
-            "defaultValue": "",
             "metadata": {
-                "description": "the object Id of the Key Vault Admin Group."
+                "description": "The location of the resource group"
             }
         },
-        "certificatesOfficerGroup": {
-            "type": "string",
-            "defaultValue": "",
-            "metadata": {
-                "desciption": "the object Id of the certificate officers group."
-            }
-        },
-        "DnsZoneNames": {
+        "Locations": {
             "type": "array",
+            "defaultValue": [],
             "metadata": {
-                "description": "the zone name, must be a valid"
-            }
-        },
-        "CNAME_DnsZoneRecords": {
-            "type": "object",
-            "metadata": {
-                "description": "An array of record names, types and values"
-            }
-        },
-        "NS_DnsZoneRecords": {
-            "type": "object",
-            "metadata": {
-                "description": "An array of record names, types and values"
+                "description": "list of valid locations"
             }
         },
         "resourceTags": {
@@ -54,10 +35,60 @@
                 "key": "value"
             },
             "metadata": {
-                "description": "Tags value pairs which get associated with the DNS Zone"
+                "description": "Tags value pairs which get associated with the resource group"
             }
         },
-         "DNSTXTContributorId": {
+        "RBAC": {
+            "type": "array",
+            "metadata": {
+                "description": "An object of resource group RBAC assignments"
+            }
+        },
+        "DedicatedSubscription":{
+            "type": "string",
+            "defaultValue": "Yes",
+            "allowedValues":[   
+                "Yes",
+                "No"
+            ],
+            "metadata":{
+                "description": "Dedicated subscriptions get Azure Policies deployed, If the connectivity and management resource groups exist within the same subscription only one should be set to Yes."
+            }
+        },
+        "kvAdminGroup":{
+            "type": "string",
+            "defaultValue": "",
+            "metadata": {
+                "description": "the object Id of the Key Vault Admin Group."
+            }
+        },
+        "certOfficerGroup": {
+            "type": "string",
+            "defaultValue": "",
+            "metadata": {
+                "desciption": "the object Id of the certificate officers group."
+            }
+        },
+        "dnsZoneNames": {
+            "type": "array",
+            "metadata": {
+                "description": "the zone name, must be a valid"
+            }
+        },
+        "childDnsNSRecords": {
+            "type": "object",
+            "defaultValue": {},
+            "metadata": {
+                "description": "Array of child DNS domains and their parent"
+            }
+        },
+        "CNAME_DnsZoneRecords": {
+            "type": "object",
+            "metadata": {
+                "description": "An array of record names, types and values"
+            }
+        },
+        "DNSTXTContributorId": {
             "type": "string",
             "defaultValue": "",
             "metadata": {
@@ -70,42 +101,126 @@
             "metadata": {
                 "description": "the object Id of the DNS TXT Contributors Group."
             }
-        },
-        "_artifactsLocation": {
-            "type": "string",
-            "defaultValue": "https://stdemou3tx2e2jtz6sk.blob.core.windows.net/armtemplates/",
-            "metadata": {
-                "description": "The base URI where artifacts required by this template are located."
-            }
         }
     },
     "variables": {
-        "linkedTemplates":{
-            "Storage": "[concat(parameters('_artifactsLocation'), 'Storage-Account.json')]",
-            "keyVault": "[concat(parameters('_artifactsLocation'), 'Key-Vault.json')]",
-            "dnsZone": "[concat(parameters('_artifactsLocation'), 'DNS-Zone.json')]"
-        }
+        "resourceGroupPrefix": "[concat('rg-', uniquestring(toLower(parameters('environment')), toLower(parameters('location')), toLower(subscription().id)))]",
+        "resourceGroupName": "[concat(variables('resourceGroupPrefix'), '-', toLower(parameters('usage')))]",
+        "AllowedLocations": "[if(empty(parameters('Locations')), createArray(parameters('location')), parameters('Locations'))]",
+        "rgLocationPolicyId": "/providers/Microsoft.Authorization/policyDefinitions/e765b5de-1225-4ba3-bd56-1ac6695af988",
+        "resLocationPolicyId": "/providers/Microsoft.Authorization/policyDefinitions/e56962a6-4747-49cd-b67b-bf8b01975c4c"
     },
     "resources": [
+        {
+            "type": "Microsoft.Resources/resourceGroups",
+            "apiVersion": "2021-04-01",
+            "name": "[variables('resourceGroupName')]",
+            "location": "[parameters('location')]",
+            "tags": "[parameters('resourceTags')]"
+        },
+        {
+            "condition": "[equals(parameters('DedicatedSubscription'), 'Yes')]",
+            "type": "Microsoft.Authorization/policyAssignments",
+            "apiVersion": "2019-09-01",
+            "name": "[guid(variables('rgLocationPolicyId'), parameters('Location'))]",
+            "dependsOn":[
+                "[resourceId('Microsoft.Resources/resourceGroups', variables('resourceGroupName'))]"
+            ],
+            "properties":{
+                "displayName": "[concat('Allowed Locations for Resource Groups: ', replace(replace(replace(string(variables('AllowedLocations')), '[\"', ''), '\"]', ''), '\",\"' , '-'))]",
+                "policyDefinitionId": "[variables('rgLocationPolicyId')]",
+                "parameters":{
+                "listOfAllowedLocations": {
+                        "value": "[variables('allowedLocations')]"
+                    }
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2020-10-01",
+            "name": "[guid(parameters('RBAC')[copyIndex('RBAC')].principalId, parameters('RBAC')[copyIndex('RBAC')].roleId, resourceId('Microsoft.Resources/resourceGroups', variables('resourceGroupName')))]",
+            "copy": {
+                "name": "RBAC",
+                "count": "[length(parameters('RBAC'))]"
+            },
+            "dependsOn":[
+                "[resourceId('Microsoft.Resources/resourceGroups', variables('resourceGroupName'))]"
+            ],
+            "resourceGroup": "[variables('resourceGroupName')]",            
+            "properties": {
+                "mode": "incremental",
+                "template": {
+                    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "resources": [
+                        {
+                            "type": "Microsoft.Authorization/roleAssignments",
+                            "apiVersion": "2017-09-01",
+                            "name": "[guid(parameters('RBAC')[copyIndex('RBAC')].principalId, parameters('RBAC')[copyIndex('RBAC')].roleId, resourceId('Microsoft.Resources/resourceGroups', variables('resourceGroupName')))]",                
+                            "properties": {
+                                "roleDefinitionId": "[ResourceId('Microsoft.Authorization/roleDefinitions', parameters('RBAC')[copyIndex('RBAC')].roleId)]",
+                                "principalId": "[parameters('RBAC')[copyIndex('RBAC')].principalId]"
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2020-10-01",
+            "name": "AllowedLocationsForResources",
+            "dependsOn":[
+                "[resourceId('Microsoft.Resources/resourceGroups', variables('resourceGroupName'))]"
+            ],
+            "resourceGroup": "[variables('resourceGroupName')]",            
+            "properties": {
+                "mode": "incremental",
+                "template": {
+                    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "resources": [
+                        {
+                            "type": "Microsoft.Authorization/policyAssignments",
+                            "apiVersion": "2019-09-01",
+                            "name": "[guid(variables('resLocationPolicyId'), parameters('Location'))]",
+                            "properties":{
+                                "displayName": "[concat('Allowed Locations for Azure Resources: ', replace(replace(replace(string(variables('AllowedLocations')), '[\"', ''), '\"]', ''), '\",\"' , '-'))]",
+                                "policyDefinitionId": "[variables('resLocationPolicyId')]",
+                                "parameters":{
+                                    "listOfAllowedLocations": {
+                                        "value": "[variables('allowedLocations')]"
+                                    } 
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        },
         {
             "type": "Microsoft.Resources/deployments",
             "apiVersion": "2019-10-01",
             "name": "createStorage",
+            "dependsOn": [
+                "[resourceId('Microsoft.Resources/resourceGroups', variables('resourceGroupName'))]"
+            ],
+            "resourceGroup": "[variables('resourceGroupName')]",
             "properties": {
                 "mode": "Incremental",
-                "templateLink": {
-                    "uri":"[variables('linkedTemplates').Storage]",
-                    "contentVersion": "1.0.0.0"
+                "expressionEvaluationOptions": {
+                    "scope": "Inner"
                 },
-                "parameters":{
-                    "company": {
-                        "value": "[parameters('company')]"
-                    },
+                "parameters": {
                     "environment": {
                         "value": "[parameters('environment')]"
                     },
-                    "suffix": {
-                        "value": "LetsEncrypt"
+                    "location": {
+                        "value": "[parameters('location')]"
+                    },
+                    "usage": {
+                        "value": "[parameters('usage')]"
                     },
                     "deployContainer": {
                         "value": "Yes"
@@ -120,6 +235,154 @@
                             "usage": "Lets Encrypt"
                         }
                     }
+                },
+                "template": {
+                    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {
+                        "environment" :{
+                            "type": "string",
+                            "defaultValue": "Demo",
+                            "metadata": {
+                                "description": "Prod, Dev, Test, PoC, and Demo"
+                            }
+                        },
+                        "location": {
+                            "type": "string",
+                            "metadata": {
+                                "description": "Location for all resources."
+                            }
+                        },
+                        "usage":{
+                            "type": "string",
+                            "defaultValue": "storage",
+                            "metadata":{
+                                "description": "used to generate a random string"
+                            }
+                        },
+                        "allowBlobPublicAccess": {
+                            "type": "bool",
+                            "defaultValue": false,
+                            "allowedValues": [
+                                true,
+                                false
+                            ],
+                            "metadata": {   
+                                "desciption": "Should the storage account be public - no by default but maybe useful for demoing stuff"
+                            }
+                        },
+                        "deployContainer": {
+                            "type": "string",
+                            "defaultValue": "No",
+                            "allowedValues": [
+                                "Yes",
+                                "No"
+                            ],
+                            "metadata": {
+                                "description": "Determine whether a container or containers should be deployed"
+                            }
+                        },
+                        "containerName": {
+                            "type": "array",
+                            "defaultValue": [
+                                "Container1",
+                                "Container2"
+                            ]
+                        },
+                        "containerPublicAccess": {
+                            "type": "string",
+                            "defaultValue": "none",
+                            "allowedValues": [
+                                "none",
+                                "Blob",
+                                "Container"
+                            ],
+                            "metadata": {
+                                "desciption": "Used in conjunction with allowBlobPublicAccess"
+                            }
+                        },
+                        "accountSasProperties": {
+                            "type": "object",
+                            "defaultValue": {
+                                "signedServices": "b",
+                                "signedPermission": "r",
+                                "signedResourceTypes": "co",
+                                "signedStart": "[dateTimeAdd(utcNow('u'), '-PT1H')]",
+                                "signedExpiry": "[dateTimeAdd(utcNow('u'), 'PT2H')]"
+                            },
+                            "metadata": {
+                                "description": "used to obtain a SAS token for the storage account."
+                            }
+                        },
+                        "resourceTags":{
+                            "type": "object",
+                            "defaultValue": {
+                                "usage": "storage"
+                            },
+                            "metadata":{
+                                "description": "Mandatory requirement to denote what the storage account is used for e.g. Compute diagnostics, NSG flow logs etc."
+                            }
+                        }
+                    },
+                    "variables": {
+                        "storageAccountUniqueString": "[uniquestring(parameters('environment'), parameters('location'), subscription().id, parameters('usage'))]",
+                        "storageAccountName": "[if(greater(length(concat('st', variables('storageAccountUniqueString'))),23), tolower(substring(concat('st', toLower(variables('storageAccountUniqueString'))),0,23)), concat('st', tolower(variables('storageAccountUniqueString'))))]" 
+                    },
+                    "resources": [
+                        {
+                            "type": "Microsoft.Storage/storageAccounts",
+                            "name": "[variables('StorageAccountName')]",
+                            "apiVersion": "2019-04-01",
+                            "location": "[parameters('location')]",
+                            "tags": "[parameters('resourceTags')]",
+                            "kind": "StorageV2",
+                            "sku": {
+                                "name": "Standard_LRS"
+                            },
+                            "properties": {
+                                "accessTier": "Hot",
+                                "allowBlobPublicAccess": "[parameters('allowBlobPublicAccess')]"
+                            }
+                        },
+                        {
+                            "condition": "[equals(parameters('deployContainer'), 'Yes')]",
+                            "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+                            "apiVersion": "2019-06-01",
+                            "name": "[concat(variables('storageAccountName'), '/default/', toLower(parameters('containerName')[copyIndex('Containers')]))]",
+                            "dependsOn": [
+                                "[resourceId('Microsoft.Storage/storageAccounts', variables('StorageAccountName'))]"
+                            ],
+                            "copy": {
+                                "name": "Containers",
+                                "count": "[length(parameters('containerName'))]"
+                            },
+                            "properties": {
+                                "publicAccess": "[parameters('containerPublicAccess')]"
+                            }
+                        }
+                    ],
+                    "outputs": {
+                        "storageAccount_Name":{
+                            "type": "string",
+                            "value": "[variables('StorageAccountName')]"
+                        },
+                        "storageAccount_Id":{
+                            "type":"string",
+                            "value": "[resourceId('Microsoft.Storage/storageAccounts', variables('StorageAccountName'))]"
+                        },
+                        "artifactLocation": {
+                            "condition": "[equals(parameters('deployContainer'), 'Yes')]",
+                            "type": "array",
+                            "copy": {
+                                "count": "[length(parameters('containerName'))]",
+                                "input": "[concat('https://', variables('storageAccountName'), '.blob.core.windows.net/', toLower(parameters('containerName')[copyIndex()]))]"
+                            }
+                        },
+                        "sasToken": {
+                            "type": "string",
+                            "value": "[listAccountSas(variables('storageAccountName'), '2021-04-01', parameters('accountSasProperties')).accountSasToken]"
+                        }
+                    }
                 }
             }
         },
@@ -128,29 +391,238 @@
             "apiVersion": "2019-10-01",
             "name": "createKeyVault",
             "dependsOn":[
-                "[resourceId('Microsoft.Resources/deployments', 'createStorage')]"
+                "createStorage"
             ],
+            "resourceGroup": "[variables('resourceGroupName')]",
             "properties": {
                 "mode": "Incremental",
-                "templateLink": {
-                    "uri":"[variables('linkedTemplates').keyVault]",
-                    "contentVersion": "1.0.0.0"
+                "expressionEvaluationOptions": {
+                    "scope": "Inner"
                 },
                 "parameters":{
-                    "company": {
-                        "value": "[parameters('company')]"
-                    },
                     "environment": {
                         "value": "[parameters('environment')]"
                     },
-                    "kvUsage": {
+                    "location": {
+                        "value": "[parameters('location')]"
+                    },
+                    "usage": {
                         "value": "LetsEncrypt"
                     },
                     "keyVaultAdminGroup": {
-                        "value": "[parameters('keyVaultAdminGroup')]"
+                        "value": "[parameters('kvAdminGroup')]"
                     },
                     "certificatesOfficerGroup": {
-                        "value": "[parameters('certificatesOfficerGroup')]"
+                        "value": "[parameters('certOfficerGroup')]"
+                    }
+                },
+                "template": {
+                    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {
+                        "environment": {
+                        "type": "string",
+                            "metadata": {
+                                "description": "Prod, Dev, Test, PoC, and Demo"
+                            },
+                            "defaultValue": "Demo"
+                        },
+                        "usage": {
+                            "type": "string",
+                            "metadata": {
+                                "description": "Application or service e.g. APP1 or ARM"
+                            },
+                            "defaultValue": ""
+                        },
+                        "location": {
+                            "type": "string",
+                            "metadata": {
+                                "description": "The location of the resource; inherits the resource group configuration."
+                            }
+                        },
+                        "sku": {
+                            "type": "string",
+                            "allowedValues": [
+                                "Standard",
+                                "Premium"
+                            ],
+                            "metadata": {
+                                "description": "A Standard or Premium vault."
+                            },
+                            "defaultValue": "Standard"
+                        },
+                        "enableSoftDelete": {
+                            "type": "bool",
+                            "allowedValues": [
+                                true,
+                                false
+                            ],
+                            "defaultValue": true,
+                            "metadata": {
+                                "description": "Used to set soft delete functionality for the key vault - false is useful for test scenarios"
+                            }
+                        },
+                        "enabledForDeployment": {
+                            "type": "bool",
+                            "metadata":{
+                                "desciption": "Specifies whether Azure Virtual Machines are permitted to retrieve certificates stored as secrets from the key vault."
+                            },
+                            "defaultValue": false,
+                            "allowedValues": [
+                                true,
+                                false
+                            ]
+                        },
+                        "enabledForTemplateDeployment": {
+                            "type": "bool",
+                            "metadata": {
+                                "description": "Specifies whether Azure Resource Manager is permitted to retrieve secrets from the key vault."
+                            },
+                            "defaultValue": false,
+                            "allowedValues": [
+                                true,
+                                false
+                            ]
+                        },
+                        "enabledForDiskEncryption": {
+                            "type": "bool",
+                            "metadata": {
+                                "description": "Specifies whether Azure Disk Encryption is permitted to retrieve secrets from the vault and unwrap keys."
+                            },
+                            "defaultValue": false,
+                            "allowedValues": [
+                                true,
+                                false
+                            ]
+                        },
+                        "enableDiagnosticLogging": {
+                            "type": "string",
+                            "defaultValue": "No",
+                            "allowedValues": [
+                                "Yes",
+                                "No"
+                            ],
+                            "metadata": {
+                                "description": "Should diagnostic logging be enabled - if so requires log analytics workspace."
+                            }
+                        },
+                        "logAnalyticsWorkspace_Id":{
+                            "type": "string",
+                            "defaultValue": "",
+                            "metadata": {
+                                "description": "The workspace, key vault will use for diagnostic logging"
+                            }
+                        },
+                        "keyVaultAdminGroup":{
+                            "type": "string",
+                            "metadata": {
+                                "description": "the object Id of the Key Vault Admin Group."
+                            }
+                        },
+                        "certificatesOfficerGroup": {
+                            "type": "string",
+                            "metadata": {
+                                "desciption": "the object Id of the certificate officers group."
+                            }
+                        }
+                    },
+                    "variables": {
+                        "keyVaultUniqueString": "[uniqueString(parameters('environment'), parameters('location'), subscription().id, parameters('usage'))]",
+                        "keyVaultName": "[if(greater(length(concat('kv-', variables('keyVaultUniqueString'))),24), toLower(substring(concat('kv-', toLower(variables('keyVaultUniqueString'))), 0, 24)), concat('kv-', toLower(variables('keyVaultUniqueString'))))]",
+                        "resourceTags": {
+                            "usage": "[parameters('usage')]"
+                        },
+                        "keyVault_Id": "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName'))]",
+                        "Key Vault Administrator": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefintions/', '00482a5a-887f-4fb3-b363-3b7fe8e74483')]",
+                        "Key Vault Certificates Officer": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefintions/', 'a4417e6f-fecd-4de8-b567-7b0420556985')]"
+                    },
+                    "resources": [
+                        {
+                            "apiVersion": "2019-09-01",
+                            "name": "[variables('keyVaultName')]",
+                            "location": "[parameters('location')]",
+                            "type": "Microsoft.KeyVault/vaults",
+                            "tags": "[variables('resourceTags')]",
+                            "properties": {
+                                "enabledForDeployment": "[parameters('enabledForDeployment')]",
+                                "enabledForTemplateDeployment": "[parameters('enabledForTemplateDeployment')]",
+                                "enabledForDiskEncryption": "[parameters('enabledForDiskEncryption')]",
+                                "enableRbacAuthorization": true,
+                                "enableSoftDelete": "[parameters('enableSoftDelete')]",
+                                "enablePurgeProtection": "[if(parameters('enableSoftDelete'), bool('true'), json('null'))]",
+                                "softDeleteRetentionInDays": 7,
+                                "tenantId": "[subscription().tenantId]",
+                                "sku": {
+                                    "name": "[parameters('sku')]",
+                                    "family": "A"
+                                },
+                                "networkAcls": {
+                                    "defaultAction": "Allow",
+                                    "bypass": "AzureServices"
+                                }
+                            }
+                        },
+                        {
+                            "condition": "[equals(parameters('enableDiagnosticLogging'), 'Yes')]",
+                            "type": "Microsoft.KeyVault/vaults/providers/diagnosticSettings",
+                            "name": "[concat(variables('keyVaultName'), '/Microsoft.Insights/service')]",
+                            "apiVersion":"2016-09-01",
+                            "location":"[parameters('location')]",
+                            "dependsOn":[
+                                "[variables('keyVault_Id')]"
+                            ],
+                            "properties":{
+                                "workspaceId":"[parameters('logAnalyticsWorkspace_Id')]",
+                                "logs": [
+                                    {
+                                        "category": "AuditEvent",
+                                        "enabled": true
+                                    }
+                                ],
+                                "metrics": [
+                                    {
+                                        "category": "AllMetrics",
+                                        "enabled": true
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "type": "Microsoft.KeyVault/vaults/providers/roleAssignments",
+                            "apiVersion": "2020-04-01-preview",
+                            "name": "[concat(variables('keyVaultName'), '/Microsoft.Authorization/', guid(uniqueString(concat(toUpper(parameters('keyVaultAdminGroup')), variables('keyVaultName')))))]",
+                            "location": "[parameters('location')]",
+                            "dependsOn":[
+                                "[variables('keyVault_Id')]"
+                            ],
+                            "properties": {
+                                "roleDefinitionId": "[variables('Key Vault Administrator')]",
+                                "principalId": "[parameters('keyVaultAdminGroup')]"
+                            }
+                        },
+                        {
+                            "type": "Microsoft.KeyVault/vaults/providers/roleAssignments",
+                            "apiVersion": "2020-04-01-preview",
+                            "name": "[concat(variables('keyVaultName'), '/Microsoft.Authorization/', guid(uniqueString(concat(toUpper(parameters('certificatesOfficerGroup')), variables('keyVaultName')))))]",
+                            "location": "[parameters('location')]",
+                            "dependsOn":[
+                                "[variables('keyVault_Id')]"
+                            ],
+                            "properties": {
+                                "roleDefinitionId": "[variables('Key Vault Certificates Officer')]",
+                                "principalId": "[parameters('certificatesOfficerGroup')]"
+                            }
+                        }
+                    ],
+                    "outputs": {
+                        "keyVault_Id":{
+                            "type": "string",
+                            "value": "[variables('keyVault_Id')]"
+                        },
+                        "keyVault_Name":{
+                            "type": "string",
+                            "value": "[variables('keyVaultName')]"
+                        }
                     }
                 }
             }
@@ -160,26 +632,26 @@
             "apiVersion": "2019-10-01",
             "name": "createDnsZone",
             "dependsOn":[
-                "[resourceId('Microsoft.Resources/deployments', 'createKeyVault')]"
+                "createKeyVault"
             ],
+            "resourceGroup": "[variables('resourceGroupName')]",
             "properties": {
                 "mode": "Incremental",
-                "templateLink": {
-                    "uri":"[variables('linkedTemplates').dnsZone]",
-                    "contentVersion": "1.0.0.0"
+                "expressionEvaluationOptions": {
+                    "scope": "Inner"
                 },
                 "parameters": {
-                    "DnsZoneNames": {
+                    "dnsZoneNames": {
                         "value": "[parameters('DnsZoneNames')]"
+                    },
+                    "childDnsNSRecords": {
+                        "value": "[parameters('childDnsNSRecords')]"
                     },
                     "deployCNAMERecord": {
                         "value": "Yes"
                     },
                     "CNAME_DnsZoneRecords": {
                         "value": "[parameters('CNAME_DnsZoneRecords')]"
-                    },
-                    "NS_DnsZoneRecords": {
-                        "value": "[parameters('NS_DnsZoneRecords')]"
                     },
                     "resourceTags": {
                         "value": "[parameters('resourceTags')]"
@@ -190,6 +662,195 @@
                     "DNSTXTContributorsgroup": {
                         "value": "[parameters('DNSTXTContributorsGroup')]"
                     }   
+                },
+                "template": {
+                    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {
+                        "DnsZoneNames": {
+                            "type": "array",
+                            "metadata": {
+                                "description": "the zone name, must be a valid"
+                            }
+                        },
+                        "childDnsNSRecords": {
+                            "type": "object",
+                            "metadata": {
+                                "description": "Array of child DNS domains and their parent"
+                            }
+                        },
+                        "deployARecord": {
+                            "type": "string",
+                            "defaultValue": "No",
+                            "allowedValues": [
+                                "Yes",
+                                "No"
+                            ],
+                            "metadata": {
+                                "description": "Determine whether an A record should be deployed"
+                            }
+                        },
+                        "A_DnsZoneRecords": {
+                            "type": "object",
+                            "defaultValue": {
+                                "records": [
+                                    {
+                                        "Name": "domain.com",
+                                        "Record": "www",
+                                        "ipV4Address": "1.0.0.1"
+
+                                    }
+                                ]
+                            },
+                            "metadata": {
+                                "description": "An array of record names, types and values"
+                            }
+                        },
+                        "deployCNAMERecord": {
+                            "type": "string",
+                            "defaultValue": "No",
+                            "allowedValues": [
+                                "Yes",
+                                "No"
+                            ],
+                            "metadata": {
+                                "description": "Determine whether a CNAME records should be deployed"
+                            }
+                        },
+                        "CNAME_DnsZoneRecords": {
+                            "type": "object",
+                            "metadata": {
+                                "description": "An array of record names, types and values"
+                            }
+                        },
+                        "resourceTags": {
+                            "type": "object",
+                            "defaultValue": {
+                                "key": "value"
+                            },
+                            "metadata": {
+                                "description": "Tags value pairs which get associated with the resource group"
+                            }
+                        },
+                        "DNSTXTContributorId": {
+                            "type": "string",
+                            "metadata": {
+                                "desciption": "The custom role created by the script: New-RoleDefintion.ps1"
+                            }
+                        },
+                        "DNSTXTContributorsGroup": {
+                            "type": "string",
+                            "metadata": {
+                                "description": "the object Id of the DNS TXT Contributors Group."
+                            }
+                        }
+                    },
+                    "resources": [
+                        {
+                            "type": "Microsoft.Network/dnszones",
+                            "apiVersion": "2018-05-01",
+                            "name": "[parameters('DnsZoneNames')[copyIndex('dnsZones')]]",
+                            "location": "global",
+                            "tags": "[parameters('resourceTags')]",
+                            "copy": {
+                                "name": "dnsZones",
+                                "mode": "Serial",
+                                "count": "[length(parameters('DnsZoneNames'))]"
+                            },
+                            "properties": {
+                                "zoneType": "Public"
+                            }
+                        },
+                        {
+                            "condition": "[not(empty(parameters('childDnsNSRecords')))]",
+                            "type": "Microsoft.Network/dnsZones/NS",
+                            "apiVersion": "2018-05-01",
+                            "name": "[concat(parameters('childDnsNSRecords').Records[copyIndex('child')].Parent, '/', parameters('childDnsNSRecords').Records[copyIndex('child')].Name)]",
+                            "dependsOn": [
+                                "dnsZones"
+                            ],
+                            "copy": {
+                                "name": "child",
+                                "mode": "Serial",
+                                "count": "[length(parameters('childDnsNSRecords').Records)]"
+                            },
+                            "properties": {
+                                "TTL": 3600,
+                                "NSRecords": "[reference(resourceId('Microsoft.Network/dnsZones/NS', concat(parameters('childDnsNSRecords').Records[copyIndex('child')].Name, '.', parameters('childDnsNSRecords').Records[copyIndex('child')].Parent), '@'), '2018-05-01').NSRecords]"
+                            }
+                        },
+                        {
+                            "condition": "[equals(parameters('deployARecord'), 'Yes')]",
+                            "type": "Microsoft.Network/dnszones/A",
+                            "apiVersion": "2018-05-01",
+                            "name": "[concat(parameters('A_DnsZoneRecords').records[copyIndex('aRecords')].Name, '/', parameters('A_DnsZoneRecords').records[copyIndex('aRecords')].Record)]",
+                            "dependsOn": [
+                                "dnsZones"
+                            ],
+                            "copy": {
+                                "name": "aRecords",
+                                "mode": "Serial",
+                                "count": "[length(parameters('A_DnsZoneRecords').records)]"
+                            },
+                            "properties": {
+                                "ipv4Address": "[parameters('A_DnsZoneRecords').records[copyIndex('aRecords').ipV4Address]]"
+                            }
+                        },
+                        {
+                            "condition": "[equals(parameters('deployCNAMERecord'), 'Yes')]",
+                            "type": "Microsoft.Network/dnszones/CNAME",
+                            "apiVersion": "2018-05-01",
+                            "name": "[concat(parameters('CNAME_DnsZoneRecords').records[copyIndex('cnameRecords')].Name, '/', parameters('CNAME_DnsZoneRecords').records[copyIndex('cnameRecords')].Record)]",
+                            "dependsOn": [
+                                "dnsZones"
+                            ],
+                            "copy": {
+                                "name": "cnameRecords",
+                                "mode": "Serial",
+                                "count": "[length(parameters('CNAME_DnsZoneRecords').records)]"
+                            },
+                            "properties": {
+                                "TTL": 604800,
+                                "CNAMERecord": {
+                                    "cname": "[parameters('CNAME_DnsZoneRecords').records[copyIndex('cnameRecords')].Value]"
+                                }
+                            }
+                        },
+                        {
+                            "type": "Microsoft.Authorization/roleAssignments",
+                            "apiVersion": "2020-04-01-preview",
+                            "name": "[guid(concat(parameters('DNSTXTContributorsgroup')), parameters('DnsZoneNames')[copyIndex('dnsZonesRbac')])]",
+                            "scope": "[concat('Microsoft.Network/dnszones/', parameters('DnsZoneNames')[copyIndex('dnsZonesRbac')])]",
+                            "dependsOn": [
+                                "dnsZones"
+                            ],
+                            "copy": {
+                                "name": "dnsZonesRbac",
+                                "mode": "Serial",
+                                "count": "[length(parameters('DnsZoneNames'))]"
+                            },
+                            "properties": {
+                                "roleDefinitionId": "[concat(subscription().Id, '/providers/Microsoft.Authorization/roleDefinitions/', parameters('DNSTXTContributorId'))]",
+                                "principalId": "[parameters('DNSTXTContributorsGroup')]"
+                            }
+                        }
+                    ],
+                    "outputs": {
+                        "dnsZone_NSRecords": {
+                            "type": "array",
+                            "copy": {
+                                "count": "[length(parameters('DnsZoneNames'))]",
+                                "input": "[reference(parameters('DnsZoneNames')[copyIndex()]).nameServers]"
+                            }
+                        },
+                        "childNS": {
+                            "type": "array",
+                            "copy": {
+                                "count": "[length(parameters('childDnsNSRecords').Records)]",
+                                "input": "[reference(resourceId('Microsoft.Network/dnsZones/NS', concat(parameters('childDnsNSRecords').Records[copyIndex()].Name, '.', parameters('childDnsNSRecords').Records[copyIndex()].Parent), '@'), '2018-05-01').NSRecords]"
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -202,6 +863,10 @@
         "keyVault_Id": {
             "type": "string",
             "value": "[reference('createKeyVault').outputs.keyVault_Id.value]"
+        },
+        "dnsZone_NSRecords": {  
+            "type": "array",
+            "value": "[reference('createDnsZone').outputs.dnsZone_NSRecords.value]"
         }
     }
 }

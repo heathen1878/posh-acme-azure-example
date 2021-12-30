@@ -2,44 +2,80 @@
     "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
-        "company": {
-            "value": "Dom"
+        "environment": {
+            "value": "" // Dev, Test, Prod - used to generate uniquestring for resources
         },
-        "DnsZoneNames": {
+        "location": {
+            "value": "" // Resource Group location - purely for metadata and used to generate uniquestring for resources
+        },
+        "Locations": { // Locations enforced by Azure Policy
             "value": [
-                "infratechy.co.uk",
-                "_acme-challenge.infratechy.co.uk"
+                "",
+                ""
             ]
         },
-        "NS_DnsZoneRecords": {
+        "usage":{
+            "value": "letsencrypt" // used to generate unique string
+        },
+        "resourceTags":{ // Tags to apply to the resource group and resources
             "value": {
-                "records": [
+                "application": "Lets Encrypt",
+                "businessContact": "",
+                "department": "",
+                "description": "Contains resources to provided automated certificates...",
+                "technicalContact": ""
+            }
+        },
+        "RBAC": {
+            "value": [
+                {
+                    "roleId": "", //built-in or custom role guid
+                    "principalId": "" // user or group GUID from AAD
+                }
+            ]
+        },
+        "DedicatedSubscription": { // Used to apply Azure Policy to the subscription
+            "value": "No"
+        },
+        "kvAdminGroup": {
+            "value": "" // user or group GUID from AAD
+        },
+        "certOfficerGroup": {
+            "value": "" // user or group GUID from AAD
+        },
+        "DNSTXTContributorsGroup": {
+            "value": ""  // user or group GUID from AAD
+        },
+        "dnsZoneNames": {
+            "value": [
+                "", // public DNS zones to be created in Azure e.g. domain.com
+                "" // public DNS zones to be created in Azure e.g. dev.domain.com
+            ]
+        },
+        "childDnsNSRecords": { // Subdomain NS creation
+            "value": {
+                "Records": [
                     {
-                        "Name": "infratechy.co.uk",
-                        "Record": "_acme-challenge"
+                        "Name": "", // subdomain e.g. dev
+                        "Parent": "" // parent e.g. domain.com
                     }
                 ]
             }
         },
-        "CNAME_DnsZoneRecords": {
+        "CNAME_DnsZoneRecords": { // CNAME creation
             "value": {
                 "records": [
                     {
-                        "Name": "infratechy.co.uk",
-                        "Record": "github",
-                        "value": "stdevt4z3f7au4f3xe.blob.core.windows.net."
+                        "Name": "", // DNS zone
+                        "Record": "", // Value
+                        "value": "" // Target
                     },
                     {
-                        "Name": "infratechy.co.uk",
-                        "Record": "/asverify.github",
-                        "value": "asverify.stdevt4z3f7au4f3xe.blob.core.windows.net."
+                        "Name": "",
+                        "Record": "",
+                        "value": ""
                     }
                 ]
-            }
-        },
-        "resourceTags": {
-            "value": {
-                "key": "Testing Lets Encrypt"
             }
         }
     }
