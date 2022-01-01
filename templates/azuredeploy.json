@@ -6,27 +6,27 @@
             "type": "string",
             "defaultValue": "Demo",
             "metadata": {
-                "description": "Prod, Dev, Test, PoC, and Demo"
+                "description": "Prod, Dev, Test, PoC, and Demo - Used to generate a unique string for resources"
             }
         },
         "usage":{
             "type": "string",
             "defaultValue": "ResourceGroupUsage",
             "metadata": {
-                "description": "Used to build the resource group name e.g. identity resources would live in a resource group which contains the word identity, an application might use APP1"
+                "description": "Appends name to the resource group"
             }
         },
         "location": {
             "type": "string",
             "metadata": {
-                "description": "The location of the resource group"
+                "description": "The location of the resource group - purely for metadata and used to generate a unique string for resources"
             }
         },
         "Locations": {
             "type": "array",
             "defaultValue": [],
             "metadata": {
-                "description": "list of valid locations"
+                "description": "Locations enforced by Azure Policy for resource groups and resources"
             }
         },
         "resourceTags": {
@@ -35,13 +35,13 @@
                 "key": "value"
             },
             "metadata": {
-                "description": "Tags value pairs which get associated with the resource group"
+                "description": "Tags value pairs which get associated with the resource group and resources"
             }
         },
         "RBAC": {
             "type": "array",
             "metadata": {
-                "description": "An object of resource group RBAC assignments"
+                "description": "An array of built-in roles and principals to be assigned the resource group scope"
             }
         },
         "DedicatedSubscription":{
@@ -78,19 +78,44 @@
         },
         "dnsZoneNames": {
             "type": "array",
+            "defaultValue": [
+                "domain.com",
+                "dev.domain.com",
+                "test.domain.com"
+            ],
             "metadata": {
-                "description": "the zone name, must be a valid"
+                "description": "Public DNS zones to be created in Azure e.g. domain.com and optionally dev.domain.com, test.domain.com..."
             }
         },
         "childDnsNSRecords": {
             "type": "object",
-            "defaultValue": {},
+            "defaultValue": {
+                "Records": [
+                    {
+                        "Name": "dev",
+                        "Parent": "domain.com"
+                    },
+                    {
+                        "Name": "test",
+                        "Parent": "domain.com"
+                    }
+                ]
+            },
             "metadata": {
-                "description": "Array of child DNS domains and their parent"
+                "description": "An array of child DNS domains and their parent - see default values for example"
             }
         },
         "CNAME_DnsZoneRecords": {
             "type": "object",
+            "defaultValue": {
+                 "records": [
+                    {
+                        "Name": "domain.com",
+                        "Record": "www",
+                        "value": "domain-com.azurewebsites.net"
+                    }
+                ]
+            },
             "metadata": {
                 "description": "An array of record names, types and values"
             }
