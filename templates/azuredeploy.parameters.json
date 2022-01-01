@@ -3,21 +3,21 @@
     "contentVersion": "1.0.0.0",
     "parameters": {
         "environment": {
-            "value": "" // Dev, Test, Prod - used to generate unique string for resources
+            "value": ""
         },
         "location": {
-            "value": "" // Resource Group location - purely for metadata and used to generate uniquestring for resources
+            "value": ""
         },
-        "Locations": { // Locations enforced by Azure Policy
+        "Locations": { 
             "value": [
                 "",
                 ""
             ]
         },
         "usage":{
-            "value": "letsencrypt" // used to generate unique string
+            "value": "letsencrypt"
         },
-        "resourceTags":{ // Tags to apply to the resource group and resources
+        "resourceTags":{
             "value": {
                 "application": "Lets Encrypt",
                 "businessContact": "",
@@ -29,49 +29,49 @@
         "RBAC": {
             "value": [
                 {
-                    "roleId": "", //built-in or custom role guid
-                    "principalId": "" // user or group GUID from AAD
+                    "roleId": "",
+                    "principalId": ""
                 }
             ]
         },
-        "DedicatedSubscription": { // Used to apply Azure Policy to the subscription
+        "DedicatedSubscription": {
             "value": "No"
         },
         "kvAdminGroup": {
-            "value": "" // user or group GUID from AAD
+            "value": ""
         },
         "certOfficerGroup": {
-            "value": "" // user or group GUID from AAD
+            "value": ""
         },
         "secretsOfficerGroup": {
-            "value": "" // user or group GUID from AAD
+            "value": ""
         },
         "DNSTXTContributorsGroup": {
-            "value": ""  // user or group GUID from AAD
+            "value": ""
         },
         "dnsZoneNames": {
             "value": [
-                "", // public DNS zones to be created in Azure e.g. domain.com
-                "" // public DNS zones to be created in Azure e.g. dev.domain.com
+                "", 
+                ""
             ]
         },
-        "childDnsNSRecords": { // Subdomain NS creation
+        "childDnsNSRecords": {
             "value": {
                 "Records": [
                     {
-                        "Name": "", // subdomain e.g. dev
-                        "Parent": "" // parent e.g. domain.com
+                        "Name": "",
+                        "Parent": ""
                     }
                 ]
             }
         },
-        "CNAME_DnsZoneRecords": { // CNAME creation
+        "CNAME_DnsZoneRecords": {
             "value": {
                 "records": [
                     {
-                        "Name": "", // DNS zone
-                        "Record": "", // Value
-                        "value": "" // Target
+                        "Name": "",
+                        "Record": "",
+                        "value": ""
                     },
                     {
                         "Name": "",
