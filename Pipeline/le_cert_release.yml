@@ -1,0 +1,126 @@
+parameters:
+  - name: stage_name
+  - name: environment
+  - name: serviceConn
+  - name: azdofeed
+  - name: location
+  - name: certificate
+  - name: contact
+  - name: staging
+    default: 1
+
+stages:
+- stage: ${{ parameters.stage_name }}
+  jobs:
+  - job: PrepArtifacts
+    displayName:  Prepare pipeline variables
+    steps:
+    - task: DownloadPipelineArtifact@2
+      displayName: Download Artifacts
+      inputs:
+        source: specific
+        project: $(System.TeamProjectId)
+        pipeline: 6
+        runVersion: latest
+
+    - task: PowerShell@2
+      name: artifacts
+      inputs:
+        targetType: Inline
+        script: |
+
+          $leInputs=@{}
+      
+          Import-Csv -Path $(Pipeline.Workspace)\${{ upper(parameters.environment) }}-Variables\${{ parameters.environment }}-le.csv | ForEach-Object {$leInputs.Add($_.Name,$_.Value)}
+          
+          $leInputs.Keys | ForEach-Object {
+            $Value=$leInputs.Item($_)
+            Write-Host "##vso[task.setvariable variable=$_;isOutput=true;]$Value"
+          }
+        failOnStderr: true
+
+  - deployment: GenerateAndStoreCert
+    displayName: Generate and Store Certificate
+    dependsOn:
+    - PrepArtifacts
+    environment: ${{ parameters.environment }}
+    variables:
+      storageId: $[ dependencies.PrepArtifacts.outputs['artifacts.LEOUTPUT_STORAGEACCOUNT_ID_VALUE'] ]
+      keyvaultId: $[ dependencies.PrepArtifacts.outputs['artifacts.LEOUTPUT_KEYVAULT_ID_VALUE'] ]
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - download: none
+          - checkout: self
+          - task: PowerShell@2
+            displayName: Install required modules
+            inputs:
+              targetType: Inline
+              script: |
+
+                # Required Modules
+
+                $modules = @{
+                  'Az.Accounts' = '2.5.2'
+                  'Az.KeyVault' = '3.4.5'
+                  'Az.Resources' = '4.3.0'
+                  'Az.Storage' = '3.10.0'
+                  'Posh-ACME' = '4.9.0'
+                }
+
+                $Modules.Keys | Foreach-Object {
+                  If (Get-Module -Name $_){
+                    $Version = Get-ModuleVersion -ModuleName $_
+
+                    If ($version -lt $Modules[$_]){
+                      Try {
+                        Install-Module -Repository PSGallery -Name $_ -MinimumVersion $Modules[$_] -scope CurrentUser -Confirm:$false -Force -ErrorAction Stop
+                      }
+                      Catch {
+                        Write-Output $Error[0].Exception.Message
+                      }
+                    }
+                  } Else {
+                    Try {
+                      Install-Module -Name $_ -scope CurrentUser -Confirm:$false -Force -ErrorAction Stop -Verbose
+                    }
+                    Catch {
+                      Write-Output $Error[0].Exception.Message 
+                    }
+                  }
+                }
+
+                # Reference for internal PowerShell modules - https://ochzhen.com/blog/install-powershell-module-from-azure-artifacts-feed
+                [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+                $accessToken = $env:SYSTEM_ACCESSTOKEN | ConvertTo-SecureString -AsPlainText -Force
+
+                $devOpsCred = New-Object System.Management.Automation.PSCredential($env:SYSTEM_ACCESSTOKEN, $accessToken)
+
+                Register-PackageSource -Name AzDoRepo -ProviderName 'PowerShellGet' -Location ${{ parameters.azdofeed }} -Trusted -Credential $devOpsCred
+
+                Install-Module -Name Dom.Logging -Repository AzDoRepo -Credential $devOpsCred -Verbose
+
+                Install-Module -Name Dom.Storage -Repository AzDoRepo -Credential $devOpsCred -Verbose
+              failOnStderr: true
+              pwsh: true
+            env:
+              SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+
+          - task: AzurePowerShell@4
+            displayName: Generate Certificate
+            inputs:
+              azureSubscription: ${{ parameters.serviceConn }}
+              scriptType: FilePath
+              scriptPath: $(System.DefaultWorkingDirectory)\scripts\New-AcmeCertificate.ps1
+              scriptArguments: 
+                -domainNames ${{ parameters.certificate }} `
+                -contactEmailAddress ${{ parameters.contact }} `
+                -storageAccountId $(storageId) `
+                -keyVaultId $(keyvaultId) `
+                -staging ${{ parameters.staging }}
+              failOnStandardError: true
+              azurePowerShellVersion: latestVersion
+              pwsh: true
+              condition: succeeded()

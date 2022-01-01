@@ -1,0 +1,37 @@
+trigger:
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - templates/*
+pr:
+  branches:
+    include:
+    - bug/*
+    - feature/*
+  paths:
+    include:
+    - templates/*
+
+variables:
+  - template: variables.yml
+
+pool:
+  vmImage: windows-latest
+
+stages:
+- template: le_infra_release.yml
+  parameters:
+    stage_name: DeployToTesting
+    environment: Testing
+    location: ${{ variables.azure_region }}
+    serviceConn: ${{ variables.serviceConn }}
+
+- template: le_infra_release.yml
+  parameters:
+    stage_name: DeployToProduction
+    environment: Production
+    location: ${{ variables.azure_region }}
+    serviceConn: ${{ variables.serviceConn }}
+  

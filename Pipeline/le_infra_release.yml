@@ -1,0 +1,77 @@
+parameters:
+  - name: stage_name
+  - name: environment
+  - name: serviceConn
+  - name: location
+
+stages:
+- stage: ${{ parameters.stage_name }}
+  jobs:
+  - deployment: DeployResourcesAndFunctionalityforLE
+    environment: ${{ parameters.environment }}
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - download: none
+          - checkout: self
+          - task: AzurePowerShell@4
+            displayName: Create custom role definition for creating TXT records
+            inputs:
+              azureSubscription: ${{ parameters.serviceConn }}
+              scriptType: FilePath
+              scriptPath: $(System.DefaultWorkingDirectory)\scripts\New-RoleDefinition.ps1
+              FailOnStandardError: true
+              azurePowerShellVersion: latestVersion
+              pwsh: true
+
+          - task: AzureResourceManagerTemplateDeployment@3
+            displayName: Deploy Resource Group and Resources for Lets Encrypt Automation
+            inputs:
+              deploymentScope: Subscription
+              azureResourceManagerConnection: ${{ parameters.serviceConn }}
+              location: ${{ parameters.location }}
+              templateLocation: Linked artifact
+              csmFile: $(System.DefaultWorkingDirectory)\templates\azuredeploy.json
+              csmParametersFile: $(System.DefaultWorkingDirectory)\templates\azuredeploy.parameters.json
+              overrideParameters:
+                -environment ${{ parameters.environment }}
+                -DNSTXTContributorId $(dnsTXTContributorRole)
+              deploymentMode: Incremental
+              deploymentOutputs: 'leOutput'
+
+          - task: AzurePowerShell@4
+            displayName: Write ARM outputs to environment variables
+            inputs:
+              azureSubscription: ${{ parameters.serviceConn }}
+              scriptType: InlineScript
+              Inline: |
+                $var=ConvertFrom-Json '$(leOutput)'
+                $value=$var.storageAccount_Id.value
+                Write-Host "##vso[task.setvariable variable=leStorageAccount_Id;]$value"
+                $value=$var.keyVault_Id.value
+                Write-Host "##vso[task.setvariable variable=leKeyVault_Id;]$value"
+              FailOnStandardError: true
+              azurePowerShellVersion: latestVersion
+              pwsh: true
+
+          - task: AzurePowerShell@4
+            displayName: Store ARM template outputs in a CSV
+            inputs:
+              azureSubscription: ${{ parameters.serviceConn }}
+              ScriptType: InlineScript
+              Inline: |
+                New-Item -Path $(Pipeline.Workspace) -Name Variables -ItemType Directory
+
+                $leOutputs = @{}
+                Get-ChildItem env:LEOUTPUT_* | ForEach-Object {$leOutputs.Add($_.Name,$_.Value.Replace("""",""))}
+                $leOutputs.GetEnumerator() | Select-Object Name, Value | Export-Csv -Path $env:PIPELINE_WORKSPACE\Variables\${{ parameters.environment }}-le.csv -IncludeTypeInformation:$false
+              FailOnStandardError: true
+              azurePowerShellVersion: latestVersion
+              pwsh: true
+          
+          - task: PublishPipelineArtifact@1
+            displayName: Publish CSV to Artifacts
+            inputs:
+              targetPath: $(Pipeline.Workspace)\Variables
+              artifactName: ${{ parameters.environment }}-Variables

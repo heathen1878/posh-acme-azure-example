@@ -1,0 +1,37 @@
+trigger: none
+ 
+schedules:
+- cron: "0 2 * * 0"
+  displayName: Every Sunday at 2am
+  branches:
+    include:
+    - main
+  always: true
+
+variables:
+  - template: variables.yml
+
+pool:
+  vmImage: windows-latest
+
+stages:
+- template: le_cert_release.yml
+  parameters:
+    stage_name: DeployToTesting
+    environment: Testing
+    location: ${{ variables.azure_region }}
+    serviceConn: ${{ variables.serviceConn }}
+    azdofeed: ${{ variables.azdofeed }}
+    certificate: ${{ variables.certificate }}
+    contact: ${{ variables.contactemail }}
+
+- template: le_cert_release.yml
+  parameters:
+    stage_name: DeployToProduction
+    environment: Production
+    location: ${{ variables.azure_region }}
+    serviceConn: ${{ variables.serviceConn }}
+    azdofeed: ${{ variables.azdofeed }}
+    certificate: ${{ variables.certificate }}
+    contact: ${{ variables.contactemail }}
+    staging: 0
