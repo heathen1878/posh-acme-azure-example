@@ -69,6 +69,13 @@
                 "desciption": "the object Id of the certificate officers group."
             }
         },
+        "secretsOfficerGroup": {
+            "type": "string",
+            "defaultValue": "",
+            "metadata": {
+                "desciption": "the object Id of the secrets officers group."
+            }
+        },
         "dnsZoneNames": {
             "type": "array",
             "metadata": {
@@ -106,15 +113,27 @@
     "variables": {
         "resourceGroupPrefix": "[concat('rg-', uniquestring(toLower(parameters('environment')), toLower(parameters('location')), toLower(subscription().id)))]",
         "resourceGroupName": "[concat(variables('resourceGroupPrefix'), '-', toLower(parameters('usage')))]",
+        "dnsZoneResourceGroupName": "[concat('rg-', uniqueString('global', toLower(subscription().id)), '-dns')]",
         "AllowedLocations": "[if(empty(parameters('Locations')), createArray(parameters('location')), parameters('Locations'))]",
         "rgLocationPolicyId": "/providers/Microsoft.Authorization/policyDefinitions/e765b5de-1225-4ba3-bd56-1ac6695af988",
-        "resLocationPolicyId": "/providers/Microsoft.Authorization/policyDefinitions/e56962a6-4747-49cd-b67b-bf8b01975c4c"
+        "resLocationPolicyId": "/providers/Microsoft.Authorization/policyDefinitions/e56962a6-4747-49cd-b67b-bf8b01975c4c",
+        "environmentTag":{
+            "environment": "[parameters('environment')]"
+        },
+        "defaultTags": "[union(variables('environmentTag'), parameters('resourceTags'))]"
     },
     "resources": [
         {
             "type": "Microsoft.Resources/resourceGroups",
             "apiVersion": "2021-04-01",
             "name": "[variables('resourceGroupName')]",
+            "location": "[parameters('location')]",
+            "tags": "[variables('defaultTags')]"
+        },
+        {
+            "type": "Microsoft.Resources/resourceGroups",
+            "apiVersion": "2021-04-01",
+            "name": "[variables('dnsZoneResourceGroupName')]",
             "location": "[parameters('location')]",
             "tags": "[parameters('resourceTags')]"
         },
@@ -124,7 +143,8 @@
             "apiVersion": "2019-09-01",
             "name": "[guid(variables('rgLocationPolicyId'), parameters('Location'))]",
             "dependsOn":[
-                "[resourceId('Microsoft.Resources/resourceGroups', variables('resourceGroupName'))]"
+                "[resourceId('Microsoft.Resources/resourceGroups', variables('resourceGroupName'))]",
+                "[resourceId('Microsoft.Resources/resourceGroups', variables('dnsZoneResourceGroupName'))]"
             ],
             "properties":{
                 "displayName": "[concat('Allowed Locations for Resource Groups: ', replace(replace(replace(string(variables('AllowedLocations')), '[\"', ''), '\"]', ''), '\",\"' , '-'))]",
@@ -170,11 +190,74 @@
         {
             "type": "Microsoft.Resources/deployments",
             "apiVersion": "2020-10-01",
+            "name": "[guid(parameters('RBAC')[copyIndex('RBAC')].principalId, parameters('RBAC')[copyIndex('RBAC')].roleId, resourceId('Microsoft.Resources/resourceGroups', variables('dnsZoneResourceGroupName')))]",
+            "copy": {
+                "name": "RBAC",
+                "count": "[length(parameters('RBAC'))]"
+            },
+            "dependsOn":[
+                "[resourceId('Microsoft.Resources/resourceGroups', variables('dnsZoneResourceGroupName'))]"
+            ],
+            "resourceGroup": "[variables('dnsZoneResourceGroupName')]",            
+            "properties": {
+                "mode": "incremental",
+                "template": {
+                    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "resources": [
+                        {
+                            "type": "Microsoft.Authorization/roleAssignments",
+                            "apiVersion": "2017-09-01",
+                            "name": "[guid(parameters('RBAC')[copyIndex('RBAC')].principalId, parameters('RBAC')[copyIndex('RBAC')].roleId, resourceId('Microsoft.Resources/resourceGroups', variables('dnsZoneResourceGroupName')))]",                
+                            "properties": {
+                                "roleDefinitionId": "[ResourceId('Microsoft.Authorization/roleDefinitions', parameters('RBAC')[copyIndex('RBAC')].roleId)]",
+                                "principalId": "[parameters('RBAC')[copyIndex('RBAC')].principalId]"
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2020-10-01",
             "name": "AllowedLocationsForResources",
             "dependsOn":[
                 "[resourceId('Microsoft.Resources/resourceGroups', variables('resourceGroupName'))]"
             ],
             "resourceGroup": "[variables('resourceGroupName')]",            
+            "properties": {
+                "mode": "incremental",
+                "template": {
+                    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "resources": [
+                        {
+                            "type": "Microsoft.Authorization/policyAssignments",
+                            "apiVersion": "2019-09-01",
+                            "name": "[guid(variables('resLocationPolicyId'), parameters('Location'))]",
+                            "properties":{
+                                "displayName": "[concat('Allowed Locations for Azure Resources: ', replace(replace(replace(string(variables('AllowedLocations')), '[\"', ''), '\"]', ''), '\",\"' , '-'))]",
+                                "policyDefinitionId": "[variables('resLocationPolicyId')]",
+                                "parameters":{
+                                    "listOfAllowedLocations": {
+                                        "value": "[variables('allowedLocations')]"
+                                    } 
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2020-10-01",
+            "name": "AllowedLocationsForResources",
+            "dependsOn":[
+                "[resourceId('Microsoft.Resources/resourceGroups', variables('dnsZoneResourceGroupName'))]"
+            ],
+            "resourceGroup": "[variables('dnsZoneResourceGroupName')]",            
             "properties": {
                 "mode": "incremental",
                 "template": {
@@ -231,9 +314,7 @@
                         ]
                     },
                     "resourceTags":{
-                        "value": {
-                            "usage": "Lets Encrypt"
-                        }
+                        "value": "[parameters('resourceTags')]"
                     }
                 },
                 "template": {
@@ -326,7 +407,12 @@
                     },
                     "variables": {
                         "storageAccountUniqueString": "[uniquestring(parameters('environment'), parameters('location'), subscription().id, parameters('usage'))]",
-                        "storageAccountName": "[if(greater(length(concat('st', variables('storageAccountUniqueString'))),23), tolower(substring(concat('st', toLower(variables('storageAccountUniqueString'))),0,23)), concat('st', tolower(variables('storageAccountUniqueString'))))]" 
+                        "storageAccountName": "[if(greater(length(concat('st', variables('storageAccountUniqueString'))),23), tolower(substring(concat('st', toLower(variables('storageAccountUniqueString'))),0,23)), concat('st', tolower(variables('storageAccountUniqueString'))))]",
+                        "resourceSpecificTags":{
+                            "usage": "Lets Encrypt",
+                            "environment": "[parameters('environment')]"
+                        },
+                        "tags": "[union(variables('resourceSpecificTags'), parameters('resourceTags'))]"
                     },
                     "resources": [
                         {
@@ -334,7 +420,7 @@
                             "name": "[variables('StorageAccountName')]",
                             "apiVersion": "2019-04-01",
                             "location": "[parameters('location')]",
-                            "tags": "[parameters('resourceTags')]",
+                            "tags": "[variables('tags')]",
                             "kind": "StorageV2",
                             "sku": {
                                 "name": "Standard_LRS"
@@ -414,6 +500,12 @@
                     },
                     "certificatesOfficerGroup": {
                         "value": "[parameters('certOfficerGroup')]"
+                    },
+                    "secretsOfficerGroup": {
+                        "value": "[parameters('secretsOfficerGroup')]"
+                    },
+                    "resourceTags":{
+                        "value": "[parameters('resourceTags')]"
                     }
                 },
                 "template": {
@@ -524,17 +616,36 @@
                             "metadata": {
                                 "desciption": "the object Id of the certificate officers group."
                             }
+                        },
+                        "secretsOfficerGroup": {
+                            "type": "string",
+                            "defaultValue": "",
+                            "metadata": {
+                                "desciption": "the object Id of the secrets officers group."
+                            }
+                        },
+                        "resourceTags":{
+                            "type": "object",
+                            "defaultValue": {
+                                "usage": "storage"
+                            },
+                            "metadata":{
+                                "description": "Mandatory requirement to denote what the storage account is used for e.g. Compute diagnostics, NSG flow logs etc."
+                            }
                         }
                     },
                     "variables": {
                         "keyVaultUniqueString": "[uniqueString(parameters('environment'), parameters('location'), subscription().id, parameters('usage'))]",
                         "keyVaultName": "[if(greater(length(concat('kv-', variables('keyVaultUniqueString'))),24), toLower(substring(concat('kv-', toLower(variables('keyVaultUniqueString'))), 0, 24)), concat('kv-', toLower(variables('keyVaultUniqueString'))))]",
-                        "resourceTags": {
-                            "usage": "[parameters('usage')]"
+                        "resourceSpecificTags":{
+                            "usage": "Lets Encrypt",
+                            "environment": "[parameters('environment')]"
                         },
+                        "tags": "[union(variables('resourceSpecificTags'), parameters('resourceTags'))]",
                         "keyVault_Id": "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName'))]",
                         "Key Vault Administrator": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefintions/', '00482a5a-887f-4fb3-b363-3b7fe8e74483')]",
-                        "Key Vault Certificates Officer": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefintions/', 'a4417e6f-fecd-4de8-b567-7b0420556985')]"
+                        "Key Vault Certificates Officer": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefintions/', 'a4417e6f-fecd-4de8-b567-7b0420556985')]",
+                        "Key Vault Secrets Officer": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefintions/', 'b86a8fe4-44ce-4948-aee5-eccb2c155cd7')]"
                     },
                     "resources": [
                         {
@@ -542,7 +653,7 @@
                             "name": "[variables('keyVaultName')]",
                             "location": "[parameters('location')]",
                             "type": "Microsoft.KeyVault/vaults",
-                            "tags": "[variables('resourceTags')]",
+                            "tags": "[variables('tags')]",
                             "properties": {
                                 "enabledForDeployment": "[parameters('enabledForDeployment')]",
                                 "enabledForTemplateDeployment": "[parameters('enabledForTemplateDeployment')]",
@@ -612,6 +723,19 @@
                                 "roleDefinitionId": "[variables('Key Vault Certificates Officer')]",
                                 "principalId": "[parameters('certificatesOfficerGroup')]"
                             }
+                        },
+                        {
+                            "type": "Microsoft.KeyVault/vaults/providers/roleAssignments",
+                            "apiVersion": "2020-04-01-preview",
+                            "name": "[concat(variables('keyVaultName'), '/Microsoft.Authorization/', guid(uniqueString(concat(toUpper(parameters('secretsOfficerGroup')), variables('keyVaultName')))))]",
+                            "location": "[parameters('location')]",
+                            "dependsOn":[
+                                "[variables('keyVault_Id')]"
+                            ],
+                            "properties": {
+                                "roleDefinitionId": "[variables('Key Vault Secrets Officer')]",
+                                "principalId": "[parameters('secretsOfficerGroup')]"
+                            }
                         }
                     ],
                     "outputs": {
@@ -634,7 +758,7 @@
             "dependsOn":[
                 "createKeyVault"
             ],
-            "resourceGroup": "[variables('resourceGroupName')]",
+            "resourceGroup": "[variables('dnsZoneResourceGroupName')]",
             "properties": {
                 "mode": "Incremental",
                 "expressionEvaluationOptions": {

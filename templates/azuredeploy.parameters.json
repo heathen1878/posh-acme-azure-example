@@ -3,7 +3,7 @@
     "contentVersion": "1.0.0.0",
     "parameters": {
         "environment": {
-            "value": "" // Dev, Test, Prod - used to generate uniquestring for resources
+            "value": "" // Dev, Test, Prod - used to generate unique string for resources
         },
         "location": {
             "value": "" // Resource Group location - purely for metadata and used to generate uniquestring for resources
@@ -41,6 +41,9 @@
             "value": "" // user or group GUID from AAD
         },
         "certOfficerGroup": {
+            "value": "" // user or group GUID from AAD
+        },
+        "secretsOfficerGroup": {
             "value": "" // user or group GUID from AAD
         },
         "DNSTXTContributorsGroup": {
