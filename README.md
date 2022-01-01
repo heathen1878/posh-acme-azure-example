@@ -15,7 +15,7 @@ Add the GUIDs of the groups above into the parameters.json
         "value": ""
     },
     "secretsOfficerGroup": {
-
+        "value": ""
     },
     "DNSTXTContributorsgroup": {
         "value": ""
