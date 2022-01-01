@@ -4,8 +4,9 @@ I've taken inspiration from this [article:](https://medium.com/@brentrobinson5/a
 
 The service principal can be created by running this [PowerShell](https://github.com/heathen1878/ARM-QuickStarts/tree/master/AzureDevOps) script. The service principal will need to be a member of the following groups: (which need creating)
 
-* Certificate Officers - this group gets the Key vault Certificates Officer RBAC role
-* DNS TXT Contributors - this group gets assigned to the custom role 'DNS TXT Contributor'
+* Certificate Officers - this group gets the Key Vault Certificates Officer RBAC role assigned to at the Key Vault resource.
+* Secrets Officers - this group gets tge Key Vault Secrets Officer RBAC role assigned to at the Key Vault resource.
+* DNS TXT Contributors - this group gets assigned to the custom role 'DNS TXT Contributor' assigned to the DNS zone resource.
 
 Add the GUIDs of the groups above into the parameters.json
 
@@ -13,11 +14,12 @@ Add the GUIDs of the groups above into the parameters.json
     "certificatesOfficerGroup": {
         "value": ""
     },
+    "secretsOfficerGroup": {
 
+    },
     "DNSTXTContributorsgroup": {
         "value": ""
-    }
-
+    },
 ```
 
 # ARM outputs
