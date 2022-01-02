@@ -31,14 +31,15 @@ You must supply at the least the following parameters:
         "value": ""
     },
 ```
-
-* Certificate Officers - this group gets the Key Vault Certificates Officer RBAC role assigned to at the Key Vault resource.
-* Secrets Officers - this group gets tge Key Vault Secrets Officer RBAC role assigned to at the Key Vault resource.
-* DNS TXT Contributors - this group gets assigned to the custom role 'DNS TXT Contributor' assigned to the DNS zone resource.
+* Location - a valid Azure region
+* RBAC - an array of roles and principals the example shows a the reader role and a fictitious principal id.
+* Certificate Officers - A user or group GUID. The user or group is assigned the Key Vault Certificates Officer role at the Key Vault resource.
+* Secrets Officers - A user or group GUID. The user or group is assigned the Key Vault Secrets Officer role at the Key Vault resource.
+* DNS TXT Contributors - A user or group GUID. The user or group is assigned the custom role 'DNS TXT Contributor' at the DNS zone resource.
 
 Add the GUIDs of the groups above into the parameters.json
 
-[![Visualize](https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/visualizebutton.svg?sanitize=true)](http://armviz.io/#/?load=https%3A%2F%2Fraw.githubusercontentcom%2Fheathen1878%2Fposh-acme-azure-example%2Fmaster%2Ftemplates%2Fazuredeploy.json)
+[![Visualize](https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/visualizebutton.svg?sanitize=true)](http://armviz.io/#/?load=https%3A%2F%2Fraw.githubusercontent.com%2Fheathen1878%2Fposh-acme-azure-example%2Fmaster%2Ftemplates%2Fazuredeploy.json)
 
 ## Manual deployment
 
