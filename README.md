@@ -31,6 +31,9 @@ You must supply at the least the following parameters:
     "secretsOfficerGroup": {
         "value": ""
     },
+    "microsoftAzureAppService": {
+        "value": ""
+    },
     "DNSTXTContributorsgroup": {
         "value": ""
     },
@@ -39,6 +42,7 @@ You must supply at the least the following parameters:
 * RBAC - an array of roles and principals the example shows a the reader role and a fictitious principal id.
 * Certificate Officers - A user or group GUID. The user or group is assigned the Key Vault Certificates Officer role at the Key Vault resource.
 * Secrets Officers - A user or group GUID. The user or group is assigned the Key Vault Secrets Officer role at the Key Vault resource.
+* Microsoft Azure App Service - the object GUID of the Microsoft Azure Websites Enterprise Application associated with your AAD tenant. 
 * DNS TXT Contributors - A user or group GUID. The user or group is assigned the custom role 'DNS TXT Contributor' at the DNS zone resource.
 
 Add the GUIDs of the groups above into the parameters.json
