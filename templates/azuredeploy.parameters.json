@@ -46,6 +46,9 @@
         "secretsOfficerGroup": {
             "value": ""
         },
+        "microsoftAzureAppService": {
+            "value": ""
+        },
         "DNSTXTContributorsGroup": {
             "value": ""
         },
