@@ -2,7 +2,7 @@
 
 I've taken inspiration from this [article:](https://medium.com/@brentrobinson5/automating-certificate-management-with-azure-and-lets-encrypt-fee6729e2b78) and built the resources and tooling to generate certificates and store them in a Key Vault for consumption by Azure App Service, Azure Application Gateway...etc.
 
-The service principal can be created by running this [PowerShell](https://github.com/heathen1878/ARM-QuickStarts/tree/master/AzureDevOps) script. The service principal will need the following roles: Key Vault Certificates Officer and Key Vault Secrets Officer.
+The service principal can be created by running this [PowerShell](https://github.com/heathen1878/ARM-QuickStarts/tree/master/AzureDevOps) script. The service principal will need the following roles: Key Vault Certificates Officer, Key Vault Secrets Officer and the custom role 'DNS TXT Contributor'.
 
 ## Infrastructure components
 
