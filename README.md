@@ -1,8 +1,8 @@
 # Lets Encrypt Automation
 
-I've taken inspiration from this [article:](https://medium.com/@brentrobinson5/automating-certificate-management-with-azure-and-lets-encrypt-fee6729e2b78) and tried to provide an environment which will build the resources and tooling to generate certificates and store them in a Key Vault for consumption by Azure App Service, Azure Application Gateway...etc.
+I've taken inspiration from this [article:](https://medium.com/@brentrobinson5/automating-certificate-management-with-azure-and-lets-encrypt-fee6729e2b78) and built the resources and tooling to generate certificates and store them in a Key Vault for consumption by Azure App Service, Azure Application Gateway...etc.
 
-The service principal can be created by running this [PowerShell](https://github.com/heathen1878/ARM-QuickStarts/tree/master/AzureDevOps) script. The service principal will need to be a member of the following groups: (which need creating)
+The service principal can be created by running this [PowerShell](https://github.com/heathen1878/ARM-QuickStarts/tree/master/AzureDevOps) script. The service principal will need the following roles: Key Vault Certificates Officer and Key Vault Secrets Officer.
 
 ## Infrastructure components
 
@@ -68,7 +68,7 @@ New-AzSubscriptionDeployment `
 
 ### Continuous Delivery
 
-The pipeline le_infra.yml will create the role and resources but requires the following variables be defined
+The pipeline le_infra.yml will create the role and resources but requires the following variables be defined in the variables.yml.
 
 ```yaml
 azure_region: 'North Europe'
