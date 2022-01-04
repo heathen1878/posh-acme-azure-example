@@ -85,7 +85,7 @@ Regardless of which method you opt for you'll need to configure Name Server reco
 
 [![Build Status](https://dev.azure.com/heathen1878/MSDN/_apis/build/status/Pwsh-LetsEncrypt-Cert?branchName=main)](https://dev.azure.com/heathen1878/MSDN/_build/latest?definitionId=8&branchName=main)
 
-The certificate renewal script uses two functions which are hosted within a private PowerShell gallery - using an Azure DevOps Artifacts [feeds](https://github.com/heathen1878/PowerShellModules#readme). The pipeline installs these modules on the Microsoft hosted agent, alongside other required modules. 
+The certificate renewal script uses two functions which are hosted within a private PowerShell gallery - using an Azure DevOps Artifacts [feed](https://github.com/heathen1878/PowerShellModules#readme). The pipeline installs these modules on the Microsoft hosted agent, alongside other required modules for example:
 
 ```PowerShell
     $modules = @{
